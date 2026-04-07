@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: tournament-management
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/tournament_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: root
+    password: Sahib2611*
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+
+server:
+  port: 8080
+
+app:
+  jwt:
+    secret: "ChangeThisToALongRandomSecretKeyForProductionUseOnly123456789"
+    expiration-ms: 86400000
+
+logging:
+  level:
+    org.springframework.security: INFO
