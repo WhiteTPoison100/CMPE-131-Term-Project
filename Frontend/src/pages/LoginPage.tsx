@@ -10,7 +10,7 @@ export function LoginPage() {
   const location = useLocation()
   const from = (location.state as { from?: string } | null)?.from ?? '/dashboard'
 
-  const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -23,15 +23,14 @@ export function LoginPage() {
     e.preventDefault()
     setError(null)
     setLoading(true)
-    const res = await login(email, password)
+    const res = await login(username, password)
     setLoading(false)
     if (!res.ok) setError(res.message ?? 'Login failed.')
   }
 
   const fill = (role: 'organizer' | 'viewer') => {
-    const c =
-      role === 'organizer' ? MOCK_CREDENTIALS.organizer : MOCK_CREDENTIALS.viewer
-    setEmail(c.email)
+    const c = MOCK_CREDENTIALS[role]
+    setUsername(c.username)
     setPassword(c.password)
   }
 
@@ -42,14 +41,14 @@ export function LoginPage() {
         <div className="max-w-xl space-y-6">
           <div className="inline-flex items-center gap-2 rounded-full bg-indigo-500/10 px-3 py-1 text-xs font-semibold text-indigo-200 ring-1 ring-indigo-500/25">
             <Sparkles className="h-3.5 w-3.5" />
-            CMPE-131 · Tournament Management (frontend draft)
+            CMPE-131 · Tournament Management
           </div>
           <h1 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl">
             Run brackets like a production platform.
           </h1>
           <p className="text-base text-slate-400">
-            Tournament OS is a presentation-ready UI shell for organizers and viewers. Wire your
-            Spring Boot APIs when the backend is ready—Axios clients are already scaffolded.
+            Tournament OS connects to your Spring Boot backend. Organizers can create tournaments,
+            seed participants, generate brackets, and submit scores.
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="rounded-2xl border border-slate-800/90 bg-slate-900/50 p-4">
@@ -79,12 +78,12 @@ export function LoginPage() {
 
           <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
             <TextInput
-              label="Email"
-              name="email"
-              type="email"
+              label="Username"
+              name="username"
+              type="text"
               autoComplete="username"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               required
             />
             <TextInput
@@ -118,7 +117,7 @@ export function LoginPage() {
               >
                 <span className="font-semibold text-indigo-200">Tournament organizer</span>
                 <br />
-                <span className="text-slate-500">{MOCK_CREDENTIALS.organizer.email}</span>
+                <span className="text-slate-500">username: {MOCK_CREDENTIALS.organizer.username}</span>
                 <br />
                 <span className="font-mono text-slate-400">{MOCK_CREDENTIALS.organizer.password}</span>
               </button>
@@ -129,7 +128,7 @@ export function LoginPage() {
               >
                 <span className="font-semibold text-violet-200">Viewer</span>
                 <br />
-                <span className="text-slate-500">{MOCK_CREDENTIALS.viewer.email}</span>
+                <span className="text-slate-500">username: {MOCK_CREDENTIALS.viewer.username}</span>
                 <br />
                 <span className="font-mono text-slate-400">{MOCK_CREDENTIALS.viewer.password}</span>
               </button>
@@ -137,7 +136,7 @@ export function LoginPage() {
           </div>
 
           <p className="mt-6 text-center text-xs text-slate-500">
-            Looking for the API? Configure <span className="font-mono">VITE_API_BASE_URL</span> later.
+            Connected to Spring Boot at <span className="font-mono">localhost:8080</span>
           </p>
         </div>
       </div>

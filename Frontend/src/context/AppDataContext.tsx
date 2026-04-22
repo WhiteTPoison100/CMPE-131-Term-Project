@@ -3,19 +3,33 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useReducer,
   type ReactNode,
 } from 'react'
-import type { BracketType, Match, MatchStatus, Participant, Tournament } from '../types'
-import { initialMatches, initialParticipants, initialTournaments } from '../data/mockData'
+import type { BracketType, Match, Participant, Tournament } from '../types'
+import {
+  fetchTournaments,
+  fetchParticipants,
+  fetchMatches,
+  createTournamentApi,
+  deleteTournamentApi,
+  addParticipantApi,
+  removeParticipantApi,
+  generateBracketApi,
+  submitScoreApi,
+} from '../services/tournamentService'
 
 type AppAction =
+  | { type: 'SET_TOURNAMENTS'; payload: Tournament[] }
   | { type: 'ADD_TOURNAMENT'; payload: Tournament }
   | { type: 'UPDATE_TOURNAMENT'; id: string; payload: Partial<Tournament> }
   | { type: 'DELETE_TOURNAMENT'; id: string }
+  | { type: 'SET_ALL_PARTICIPANTS'; payload: Participant[] }
   | { type: 'ADD_PARTICIPANT'; payload: Participant }
   | { type: 'REMOVE_PARTICIPANT'; id: string }
+  | { type: 'SET_ALL_MATCHES'; payload: Match[] }
   | { type: 'SET_MATCHES'; tournamentId: string; matches: Match[] }
   | { type: 'UPDATE_MATCH'; id: string; payload: Partial<Match> }
 
@@ -26,13 +40,15 @@ interface AppState {
 }
 
 const initialState: AppState = {
-  tournaments: initialTournaments,
-  participants: initialParticipants,
-  matches: initialMatches,
+  tournaments: [],
+  participants: [],
+  matches: [],
 }
 
 function reducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
+    case 'SET_TOURNAMENTS':
+      return { ...state, tournaments: action.payload }
     case 'ADD_TOURNAMENT':
       return { ...state, tournaments: [action.payload, ...state.tournaments] }
     case 'UPDATE_TOURNAMENT':
@@ -50,6 +66,8 @@ function reducer(state: AppState, action: AppAction): AppState {
         matches: state.matches.filter((m) => m.tournamentId !== id),
       }
     }
+    case 'SET_ALL_PARTICIPANTS':
+      return { ...state, participants: action.payload }
     case 'ADD_PARTICIPANT':
       return { ...state, participants: [...state.participants, action.payload] }
     case 'REMOVE_PARTICIPANT':
@@ -57,6 +75,8 @@ function reducer(state: AppState, action: AppAction): AppState {
         ...state,
         participants: state.participants.filter((p) => p.id !== action.id),
       }
+    case 'SET_ALL_MATCHES':
+      return { ...state, matches: action.payload }
     case 'SET_MATCHES': {
       const rest = state.matches.filter((m) => m.tournamentId !== action.tournamentId)
       return { ...state, matches: [...rest, ...action.matches] }
@@ -73,72 +93,6 @@ function reducer(state: AppState, action: AppAction): AppState {
   }
 }
 
-function newId(prefix: string): string {
-  return `${prefix}-${crypto.randomUUID().slice(0, 8)}`
-}
-
-function buildDoubleElimMatches(
-  tournamentId: string,
-  tags: string[],
-): Match[] {
-  const matches: Match[] = []
-  if (tags.length < 2) return matches
-
-  const pairs: [string, string][] = []
-  for (let i = 0; i < tags.length; i += 2) {
-    const a = tags[i]
-    const b = tags[i + 1] ?? 'BYE'
-    pairs.push([a, b === 'BYE' ? 'BYE' : b])
-  }
-
-  pairs.forEach(([p1, p2], idx) => {
-    const isBye = p2 === 'BYE'
-    matches.push({
-      id: newId(`m-w1-${idx}`),
-      tournamentId,
-      bracketType: 'WINNERS',
-      round: 1,
-      matchNumber: idx + 1,
-      player1: p1,
-      player2: isBye ? '—' : p2,
-      score1: isBye ? 1 : null,
-      score2: isBye ? 0 : null,
-      winner: isBye ? p1 : null,
-      status: isBye ? 'COMPLETED' : 'READY',
-    })
-  })
-
-  matches.push({
-    id: newId('m-l1'),
-    tournamentId,
-    bracketType: 'LOSERS',
-    round: 1,
-    matchNumber: 1,
-    player1: 'TBD',
-    player2: 'TBD',
-    score1: null,
-    score2: null,
-    winner: null,
-    status: 'PENDING',
-  })
-
-  matches.push({
-    id: newId('m-gf'),
-    tournamentId,
-    bracketType: 'GRAND_FINAL',
-    round: 1,
-    matchNumber: 1,
-    player1: 'TBD',
-    player2: 'TBD',
-    score1: null,
-    score2: null,
-    winner: null,
-    status: 'PENDING',
-  })
-
-  return matches
-}
-
 interface AppDataContextValue {
   tournaments: Tournament[]
   participants: Participant[]
@@ -147,23 +101,43 @@ interface AppDataContextValue {
   getTournament: (id: string) => Tournament | undefined
   getParticipants: (tournamentId: string) => Participant[]
   getMatches: (tournamentId: string) => Match[]
-  addTournament: (input: Omit<Tournament, 'id' | 'createdAt'>) => string
+  addTournament: (input: Omit<Tournament, 'id' | 'createdAt'>) => Promise<string>
   updateTournament: (id: string, patch: Partial<Tournament>) => void
   deleteTournament: (id: string) => void
   addParticipant: (input: Omit<Participant, 'id'>) => void
   removeParticipant: (id: string) => void
-  generateBracket: (tournamentId: string) => { ok: boolean; message?: string }
+  generateBracket: (tournamentId: string) => Promise<{ ok: boolean; message?: string }>
   updateMatchScore: (
     matchId: string,
     score1: number,
     score2: number,
-  ) => { ok: boolean; message?: string }
+  ) => Promise<{ ok: boolean; message?: string }>
 }
 
 const AppDataContext = createContext<AppDataContextValue | null>(null)
 
 export function AppDataProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState)
+
+  useEffect(() => {
+    async function bootstrap() {
+      try {
+        const tournaments = await fetchTournaments()
+        dispatch({ type: 'SET_TOURNAMENTS', payload: tournaments })
+        if (tournaments.length > 0) {
+          const [allParticipants, allMatches] = await Promise.all([
+            Promise.all(tournaments.map((t) => fetchParticipants(t.id))).then((r) => r.flat()),
+            Promise.all(tournaments.map((t) => fetchMatches(t.id))).then((r) => r.flat()),
+          ])
+          dispatch({ type: 'SET_ALL_PARTICIPANTS', payload: allParticipants })
+          dispatch({ type: 'SET_ALL_MATCHES', payload: allMatches })
+        }
+      } catch (err) {
+        console.error('Failed to load data from backend:', err)
+      }
+    }
+    bootstrap()
+  }, [])
 
   const participantCountFor = useCallback(
     (tournamentId: string) =>
@@ -189,15 +163,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     [state.matches],
   )
 
-  const addTournament = useCallback((input: Omit<Tournament, 'id' | 'createdAt'>) => {
-    const id = newId('t')
-    const tournament: Tournament = {
-      ...input,
-      id,
-      createdAt: new Date().toISOString(),
-    }
+  const addTournament = useCallback(async (input: Omit<Tournament, 'id' | 'createdAt'>) => {
+    const tournament = await createTournamentApi(input)
     dispatch({ type: 'ADD_TOURNAMENT', payload: tournament })
-    return id
+    return tournament.id
   }, [])
 
   const updateTournament = useCallback((id: string, patch: Partial<Tournament>) => {
@@ -206,50 +175,63 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   const deleteTournament = useCallback((id: string) => {
     dispatch({ type: 'DELETE_TOURNAMENT', id })
+    deleteTournamentApi(id).catch((err) => console.error('Failed to delete tournament:', err))
   }, [])
 
-  const addParticipant = useCallback((input: Omit<Participant, 'id'>) => {
-    dispatch({
-      type: 'ADD_PARTICIPANT',
-      payload: { ...input, id: newId('p') },
-    })
+  const addParticipant = useCallback(async (input: Omit<Participant, 'id'>) => {
+    try {
+      const participant = await addParticipantApi(input.tournamentId, {
+        gamerTag: input.gamerTag,
+        email: input.email,
+        seedNumber: input.seed,
+      })
+      dispatch({ type: 'ADD_PARTICIPANT', payload: participant })
+    } catch (err) {
+      console.error('Failed to add participant:', err)
+    }
   }, [])
 
-  const removeParticipant = useCallback((id: string) => {
-    dispatch({ type: 'REMOVE_PARTICIPANT', id })
-  }, [])
-
-  const generateBracket = useCallback(
-    (tournamentId: string) => {
-      const tags = getParticipants(tournamentId).map((p) => p.gamerTag)
-      if (tags.length < 2) {
-        return { ok: false, message: 'Need at least two participants to generate a bracket.' }
-      }
-      const built = buildDoubleElimMatches(tournamentId, tags)
-      dispatch({ type: 'SET_MATCHES', tournamentId, matches: built })
-      return { ok: true }
+  const removeParticipant = useCallback(
+    (id: string) => {
+      const participant = state.participants.find((p) => p.id === id)
+      if (!participant) return
+      dispatch({ type: 'REMOVE_PARTICIPANT', id })
+      removeParticipantApi(participant.tournamentId, id).catch((err) =>
+        console.error('Failed to remove participant:', err),
+      )
     },
-    [getParticipants],
+    [state.participants],
   )
 
-  const updateMatchScore = useCallback((matchId: string, score1: number, score2: number) => {
-    const match = state.matches.find((m) => m.id === matchId)
-    if (!match) return { ok: false, message: 'Match not found.' }
-    if (match.player1 === 'TBD' || match.player2 === 'TBD' || match.player1 === '—') {
-      return { ok: false, message: 'Players must be assigned before submitting scores.' }
+  const generateBracket = useCallback(async (tournamentId: string) => {
+    try {
+      const matches = await generateBracketApi(tournamentId)
+      dispatch({ type: 'SET_MATCHES', tournamentId, matches })
+      dispatch({ type: 'UPDATE_TOURNAMENT', id: tournamentId, payload: { status: 'ACTIVE' } })
+      return { ok: true }
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        'Failed to generate bracket.'
+      return { ok: false, message: msg }
     }
-    if (score1 === score2) {
-      return { ok: false, message: 'Scores cannot be tied in this draft UI.' }
-    }
-    const winner = score1 > score2 ? match.player1 : match.player2
-    const status: MatchStatus = 'COMPLETED'
-    dispatch({
-      type: 'UPDATE_MATCH',
-      id: matchId,
-      payload: { score1, score2, winner, status },
-    })
-    return { ok: true }
-  }, [state.matches])
+  }, [])
+
+  const updateMatchScore = useCallback(
+    async (matchId: string, score1: number, score2: number) => {
+      try {
+        const updated = await submitScoreApi(matchId, score1, score2)
+        dispatch({ type: 'UPDATE_MATCH', id: matchId, payload: updated })
+        return { ok: true }
+      } catch (err: unknown) {
+        const msg =
+          (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+          'Score submission failed.'
+        return { ok: false, message: msg }
+      }
+    },
+    [],
+  )
 
   const value = useMemo(
     () => ({

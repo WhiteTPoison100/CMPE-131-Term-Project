@@ -8,13 +8,14 @@ import {
   type ReactNode,
 } from 'react'
 import type { AuthUser } from '../types'
-import { MOCK_USERS } from '../data/mockUsers'
+import { loginApi } from '../services/authService'
 
 const STORAGE_KEY = 'tournament_os_user'
+const TOKEN_KEY = 'tournament_os_token'
 
 interface AuthContextValue {
   user: AuthUser | null
-  login: (email: string, password: string) => Promise<{ ok: boolean; message?: string }>
+  login: (username: string, password: string) => Promise<{ ok: boolean; message?: string }>
   logout: () => void
 }
 
@@ -33,37 +34,28 @@ function loadStoredUser(): AuthUser | null {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(() => loadStoredUser())
 
-  const login = useCallback(async (email: string, password: string) => {
-    const normalized = email.trim().toLowerCase()
-    const record = MOCK_USERS[normalized]
-    if (!record || record.password !== password) {
-      return { ok: false, message: 'Invalid email or password.' }
+  const login = useCallback(async (username: string, password: string) => {
+    try {
+      const { authUser, token } = await loginApi(username, password)
+      setUser(authUser)
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(authUser))
+      localStorage.setItem(TOKEN_KEY, token)
+      return { ok: true }
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        'Invalid credentials.'
+      return { ok: false, message: msg }
     }
-    const authUser: AuthUser = {
-      id: record.id,
-      email: record.email,
-      name: record.name,
-      role: record.role,
-    }
-    setUser(authUser)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(authUser))
-    return { ok: true }
   }, [])
 
   const logout = useCallback(() => {
     setUser(null)
     localStorage.removeItem(STORAGE_KEY)
-    localStorage.removeItem('tournament_os_token')
+    localStorage.removeItem(TOKEN_KEY)
   }, [])
 
-  const value = useMemo(
-    () => ({
-      user,
-      login,
-      logout,
-    }),
-    [user, login, logout],
-  )
+  const value = useMemo(() => ({ user, login, logout }), [user, login, logout])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

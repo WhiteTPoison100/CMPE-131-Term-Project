@@ -1,11 +1,25 @@
 import { apiClient } from './apiClient'
 import type { AuthUser } from '../types'
 
-/** Placeholder: POST /auth/login — wire when Spring Security + JWT exist */
-export async function loginApi(_email: string, _password: string): Promise<AuthUser> {
-  const { data } = await apiClient.post<AuthUser>('/auth/login', {
-    email: _email,
-    password: _password,
+interface BackendLoginResponse {
+  token: string
+  username: string
+  role: string
+}
+
+export async function loginApi(
+  username: string,
+  password: string,
+): Promise<{ authUser: AuthUser; token: string }> {
+  const { data } = await apiClient.post<BackendLoginResponse>('/auth/login', {
+    username,
+    password,
   })
-  return data
+  const authUser: AuthUser = {
+    id: data.username,
+    email: data.username,
+    name: data.username,
+    role: data.role as AuthUser['role'],
+  }
+  return { authUser, token: data.token }
 }

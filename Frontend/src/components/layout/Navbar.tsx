@@ -55,7 +55,9 @@ export function Navbar({ onMenuClick }: NavbarProps) {
             <>
               <div className="hidden text-right sm:block">
                 <p className="text-sm font-medium text-white">{user.name}</p>
-                <p className="text-xs text-slate-500">{user.email}</p>
+                <p className="text-xs text-slate-500">
+                  {user.role === 'TO' ? 'Tournament Organizer' : 'Viewer'}
+                </p>
               </div>
               <span
                 className={`hidden rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset sm:inline-flex ${

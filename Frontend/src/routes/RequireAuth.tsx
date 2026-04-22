@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { AppDataProvider } from '../context/AppDataContext'
 
 export function RequireAuth() {
   const { user } = useAuth()
@@ -9,5 +10,9 @@ export function RequireAuth() {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />
   }
 
-  return <Outlet />
+  return (
+    <AppDataProvider>
+      <Outlet />
+    </AppDataProvider>
+  )
 }

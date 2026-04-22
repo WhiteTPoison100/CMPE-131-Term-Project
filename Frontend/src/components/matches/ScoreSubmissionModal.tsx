@@ -8,7 +8,7 @@ interface ScoreSubmissionModalProps {
   match: Match | null
   open: boolean
   onClose: () => void
-  onSubmit: (matchId: string, score1: number, score2: number) => { ok: boolean; message?: string }
+  onSubmit: (matchId: string, score1: number, score2: number) => Promise<{ ok: boolean; message?: string }>
 }
 
 interface ScoreFormProps {
@@ -22,7 +22,7 @@ function ScoreForm({ match, onClose, onSubmit }: ScoreFormProps) {
   const [s2, setS2] = useState(() => (match.score2 != null ? String(match.score2) : ''))
   const [error, setError] = useState<string | null>(null)
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setError(null)
     const n1 = Number(s1)
     const n2 = Number(s2)
@@ -34,7 +34,7 @@ function ScoreForm({ match, onClose, onSubmit }: ScoreFormProps) {
       setError('Scores cannot be negative.')
       return
     }
-    const res = onSubmit(match.id, Math.floor(n1), Math.floor(n2))
+    const res = await onSubmit(match.id, Math.floor(n1), Math.floor(n2))
     if (!res.ok) {
       setError(res.message ?? 'Unable to save.')
       return

@@ -64,10 +64,10 @@ export function TournamentDetailPage() {
   const nextSeed =
     participants.reduce((max, p) => Math.max(max, p.seed), 0) + 1 || 1
 
-  const onGenerate = () => {
+  const onGenerate = async () => {
     setBracketMsg(null)
-    const res = generateBracket(tournament.id)
-    setBracketMsg(res.ok ? 'Bracket generated from current seeds (demo).' : res.message ?? '')
+    const res = await generateBracket(tournament.id)
+    setBracketMsg(res.ok ? 'Bracket generated.' : res.message ?? '')
     if (res.ok) setTab('bracket')
   }
 

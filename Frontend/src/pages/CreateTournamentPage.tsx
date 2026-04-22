@@ -46,10 +46,10 @@ export function CreateTournamentPage() {
     return Object.keys(e).length === 0
   }
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!validate()) return
-    const id = addTournament({
+    const id = await addTournament({
       name: form.name.trim(),
       gameTitle: form.gameTitle.trim(),
       description: form.description.trim(),
