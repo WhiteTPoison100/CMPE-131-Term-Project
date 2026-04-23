@@ -8,16 +8,31 @@ import {
   type ReactNode,
 } from 'react'
 import type { AuthUser } from '../types'
-import { loginApi, firebaseLoginApi } from '../services/authService'
-import { signInWithFirebase } from '../lib/firebase'
+import { loginApi, syncWithBackend, mapFirebaseError } from '../services/authService'
+import {
+  signInEmailPassword,
+  signUpEmailPassword,
+  signInGoogle,
+  signOutFirebase,
+  getEmailSignInMethods,
+} from '../lib/firebase'
 
 const STORAGE_KEY = 'tournament_os_user'
 const TOKEN_KEY = 'tournament_os_token'
 
+type AuthResult = { ok: boolean; message?: string }
+
 interface AuthContextValue {
   user: AuthUser | null
-  login: (username: string, password: string) => Promise<{ ok: boolean; message?: string }>
-  loginWithFirebase: (email: string, password: string) => Promise<{ ok: boolean; message?: string }>
+  loading: boolean
+  /** Demo login (username + password against backend directly) */
+  login: (username: string, password: string) => Promise<AuthResult>
+  /** Firebase email/password sign-in */
+  signIn: (email: string, password: string) => Promise<AuthResult>
+  /** Firebase email/password sign-up */
+  signUp: (email: string, password: string, fullName: string) => Promise<AuthResult>
+  /** Firebase Google popup sign-in / sign-up */
+  signInWithGoogle: () => Promise<AuthResult>
   logout: () => void
 }
 
@@ -40,47 +55,120 @@ function storeSession(authUser: AuthUser, token: string) {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(() => loadStoredUser())
+  const [loading, setLoading] = useState(false)
 
-  const login = useCallback(async (username: string, password: string) => {
+  const finish = useCallback((authUser: AuthUser, token: string) => {
+    setUser(authUser)
+    storeSession(authUser, token)
+  }, [])
+
+  // ── Demo login ─────────────────────────────────────────────────────────────
+  const login = useCallback(async (username: string, password: string): Promise<AuthResult> => {
+    setLoading(true)
     try {
       const { authUser, token } = await loginApi(username, password)
-      setUser(authUser)
-      storeSession(authUser, token)
+      finish(authUser, token)
       return { ok: true }
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
         'Invalid credentials.'
       return { ok: false, message: msg }
+    } finally {
+      setLoading(false)
     }
-  }, [])
+  }, [finish])
 
-  const loginWithFirebase = useCallback(async (email: string, password: string) => {
+  // ── Firebase email/password sign-in ────────────────────────────────────────
+  const signIn = useCallback(async (email: string, password: string): Promise<AuthResult> => {
+    setLoading(true)
     try {
-      const idToken = await signInWithFirebase(email, password)
-      const { authUser, token } = await firebaseLoginApi(idToken)
-      setUser(authUser)
-      storeSession(authUser, token)
+      // Pre-check: if email is Google-only, tell user before they type password
+      const methods = await getEmailSignInMethods(email)
+      if (methods.length > 0 && methods.includes('google.com') && !methods.includes('password')) {
+        return { ok: false, message: 'This email is registered with Google. Please use Continue with Google.' }
+      }
+
+      const cred = await signInEmailPassword(email, password)
+      const idToken = await cred.user.getIdToken()
+      const { authUser, token } = await syncWithBackend(idToken, cred.user.displayName ?? null)
+      finish(authUser, token)
       return { ok: true }
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } }; message?: string })?.response?.data
-          ?.message ??
-        (err as { message?: string })?.message ??
-        'Firebase sign-in failed.'
-      return { ok: false, message: msg }
+      return { ok: false, message: mapFirebaseError(err) }
+    } finally {
+      setLoading(false)
     }
-  }, [])
+  }, [finish])
 
+  // ── Firebase email/password sign-up ────────────────────────────────────────
+  const signUp = useCallback(async (email: string, password: string, fullName: string): Promise<AuthResult> => {
+    setLoading(true)
+    try {
+      // Pre-check: email already registered?
+      const methods = await getEmailSignInMethods(email)
+      if (methods.length > 0) {
+        if (methods.includes('google.com')) {
+          return {
+            ok: false,
+            message: 'This email is already registered with Google. Please sign in using Continue with Google.',
+          }
+        }
+        return { ok: false, message: 'This email is already registered. Please sign in instead.' }
+      }
+
+      const cred = await signUpEmailPassword(email, password, fullName)
+      const idToken = await cred.user.getIdToken()
+      const { authUser, token } = await syncWithBackend(idToken, fullName)
+      finish(authUser, token)
+      return { ok: true }
+    } catch (err: unknown) {
+      return { ok: false, message: mapFirebaseError(err) }
+    } finally {
+      setLoading(false)
+    }
+  }, [finish])
+
+  // ── Google popup ───────────────────────────────────────────────────────────
+  const signInWithGoogle = useCallback(async (): Promise<AuthResult> => {
+    setLoading(true)
+    try {
+      const cred = await signInGoogle()
+      const email = cred.user.email ?? ''
+
+      // Post-popup conflict check: did email already exist with password?
+      const methods = await getEmailSignInMethods(email)
+      if (methods.includes('password') && !methods.includes('google.com')) {
+        await signOutFirebase()
+        return {
+          ok: false,
+          message:
+            'This email is already registered with email and password. Please sign in using that method.',
+        }
+      }
+
+      const idToken = await cred.user.getIdToken()
+      const { authUser, token } = await syncWithBackend(idToken, cred.user.displayName ?? null)
+      finish(authUser, token)
+      return { ok: true }
+    } catch (err: unknown) {
+      return { ok: false, message: mapFirebaseError(err) }
+    } finally {
+      setLoading(false)
+    }
+  }, [finish])
+
+  // ── Logout ─────────────────────────────────────────────────────────────────
   const logout = useCallback(() => {
     setUser(null)
     localStorage.removeItem(STORAGE_KEY)
     localStorage.removeItem(TOKEN_KEY)
+    void signOutFirebase()
   }, [])
 
   const value = useMemo(
-    () => ({ user, login, loginWithFirebase, logout }),
-    [user, login, loginWithFirebase, logout],
+    () => ({ user, loading, login, signIn, signUp, signInWithGoogle, logout }),
+    [user, loading, login, signIn, signUp, signInWithGoogle, logout],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

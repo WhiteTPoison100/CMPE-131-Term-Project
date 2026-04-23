@@ -33,16 +33,23 @@ public class User {
     @Column
     private String password;
 
+    @Column(length = 256)
+    private String displayName;
+
+    @Column(length = 256, unique = true)
+    private String email;
+
+    @Column(length = 128, unique = true)
+    private String firebaseUid;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 16, columnDefinition = "VARCHAR(16) NOT NULL DEFAULT 'DEMO'")
     @Builder.Default
     private AuthProvider authProvider = AuthProvider.DEMO;
 
-    @Column(length = 128, unique = true)
-    private String firebaseUid;
-
-    @Column(length = 256)
-    private String email;
+    @Enumerated(EnumType.STRING)
+    @Column(length = 16)
+    private FirebaseProvider firebaseProvider;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 16)

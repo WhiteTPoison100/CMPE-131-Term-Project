@@ -10,6 +10,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -51,6 +52,13 @@ public class GlobalExceptionHandler {
         return body(HttpStatus.CONFLICT, ex.getMessage());
     }
 
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<Map<String, Object>> handleResponseStatus(ResponseStatusException ex) {
+        HttpStatus status = HttpStatus.resolve(ex.getStatusCode().value());
+        String msg = ex.getReason() != null ? ex.getReason() : ex.getMessage();
+        return body(status != null ? status : HttpStatus.INTERNAL_SERVER_ERROR, msg);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneric(Exception ex) {
         return body(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error: " + ex.getMessage());
@@ -58,7 +66,8 @@ public class GlobalExceptionHandler {
 
     private static ResponseEntity<Map<String, Object>> body(HttpStatus status, String message) {
         Map<String, Object> m = new HashMap<>();
-        m.put("error", message);
+        m.put("message", message);
+        m.put("status", status.value());
         return ResponseEntity.status(status).body(m);
     }
 }

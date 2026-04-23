@@ -1,5 +1,14 @@
 import { initializeApp, getApps } from 'firebase/app'
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth'
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  updateProfile,
+  GoogleAuthProvider,
+  signInWithPopup,
+  fetchSignInMethodsForEmail,
+  signOut as firebaseSignOut,
+} from 'firebase/auth'
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -14,12 +23,47 @@ export const firebaseEnabled = Boolean(
   firebaseConfig.apiKey && firebaseConfig.projectId,
 )
 
-const app = firebaseEnabled && getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]
+const app =
+  firebaseEnabled && getApps().length === 0
+    ? initializeApp(firebaseConfig)
+    : getApps()[0]
 
 export const firebaseAuth = firebaseEnabled ? getAuth(app) : null
 
-export async function signInWithFirebase(email: string, password: string): Promise<string> {
+// ── sign-in methods ────────────────────────────────────────────────────────
+
+export async function getEmailSignInMethods(email: string): Promise<string[]> {
+  if (!firebaseAuth) return []
+  try {
+    return await fetchSignInMethodsForEmail(firebaseAuth, email)
+  } catch {
+    return []
+  }
+}
+
+export async function signInEmailPassword(email: string, password: string) {
   if (!firebaseAuth) throw new Error('Firebase is not configured.')
-  const credential = await signInWithEmailAndPassword(firebaseAuth, email, password)
-  return credential.user.getIdToken()
+  return signInWithEmailAndPassword(firebaseAuth, email, password)
+}
+
+export async function signUpEmailPassword(
+  email: string,
+  password: string,
+  displayName: string,
+) {
+  if (!firebaseAuth) throw new Error('Firebase is not configured.')
+  const cred = await createUserWithEmailAndPassword(firebaseAuth, email, password)
+  await updateProfile(cred.user, { displayName })
+  return cred
+}
+
+export async function signInGoogle() {
+  if (!firebaseAuth) throw new Error('Firebase is not configured.')
+  const provider = new GoogleAuthProvider()
+  provider.setCustomParameters({ prompt: 'select_account' })
+  return signInWithPopup(firebaseAuth, provider)
+}
+
+export async function signOutFirebase() {
+  if (firebaseAuth) await firebaseSignOut(firebaseAuth)
 }

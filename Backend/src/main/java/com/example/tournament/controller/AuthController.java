@@ -3,6 +3,8 @@ package com.example.tournament.controller;
 import com.example.tournament.dto.FirebaseLoginRequest;
 import com.example.tournament.dto.LoginRequest;
 import com.example.tournament.dto.LoginResponse;
+import com.example.tournament.dto.SyncRequest;
+import com.example.tournament.dto.SyncResponse;
 import com.example.tournament.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,6 +27,12 @@ public class AuthController {
         return authService.login(request);
     }
 
+    @PostMapping("/sync")
+    public SyncResponse sync(@Valid @RequestBody SyncRequest request) {
+        return authService.sync(request);
+    }
+
+    /** Kept for backward compatibility. */
     @PostMapping("/firebase-login")
     public LoginResponse firebaseLogin(@Valid @RequestBody FirebaseLoginRequest request) {
         return authService.firebaseLogin(request);

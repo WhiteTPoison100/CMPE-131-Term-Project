@@ -8,11 +8,14 @@ export type MatchStatus = 'PENDING' | 'READY' | 'COMPLETED'
 
 export type BracketType = 'WINNERS' | 'LOSERS' | 'GRAND_FINAL'
 
+export type FirebaseProvider = 'PASSWORD' | 'GOOGLE'
+
 export interface AuthUser {
   id: string
   email: string
   name: string
   role: UserRole
+  firebaseProvider?: FirebaseProvider
 }
 
 export interface Tournament {
