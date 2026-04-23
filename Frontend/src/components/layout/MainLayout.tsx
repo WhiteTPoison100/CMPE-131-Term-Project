@@ -22,7 +22,7 @@ export function MainLayout() {
   const { user, logout } = useAuth()
 
   return (
-    <div className="flex min-h-svh bg-slate-950">
+    <div className="flex h-svh overflow-hidden bg-slate-950">
       <Sidebar />
       {open ? (
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true">
@@ -76,9 +76,9 @@ export function MainLayout() {
           </div>
         </div>
       ) : null}
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <Navbar onMenuClick={() => setOpen(true)} />
-        <main className="flex-1 px-4 py-8 sm:px-6 lg:px-10">
+        <main className="flex-1 overflow-y-auto px-4 py-8 sm:px-6 lg:px-10">
           <Outlet />
         </main>
         <Footer />

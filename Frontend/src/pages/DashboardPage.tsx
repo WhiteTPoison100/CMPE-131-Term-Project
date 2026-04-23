@@ -105,24 +105,12 @@ export function DashboardPage() {
               style={tightHeading}
             >
               Welcome back,{' '}
-              <span className="bg-gradient-to-r from-indigo-300 via-violet-300 to-amber-200 bg-clip-text text-transparent">
-                {user?.name?.split(' ')[0] ?? 'there'}
+              <span className="bg-gradient-to-r from-indigo-300 via-violet-300 to-violet-400 bg-clip-text text-transparent">
+                {user?.name ?? 'there'}
               </span>
             </h1>
-            <p className="mt-2 max-w-2xl text-sm text-slate-400">
-              High-level health of your program — swap mock data for live API responses when ready.
-            </p>
+            <div className="mt-2 h-0.5 w-24 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500/0" />
           </div>
-          <RoleGuard allow="TO">
-            <Link
-              to="/tournaments/new"
-              className="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-indigo-500 via-indigo-600 to-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.6),inset_0_1px_0_0_rgba(255,255,255,0.2)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_40px_-12px_rgba(99,102,241,0.7),inset_0_1px_0_0_rgba(255,255,255,0.25)] active:scale-[0.98]"
-            >
-              <Plus className="h-4 w-4" />
-              New tournament
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-            </Link>
-          </RoleGuard>
         </div>
 
         {/* Stats grid — icon top-left, trend top-right, label & value below */}
@@ -134,7 +122,7 @@ export function DashboardPage() {
           <StatCard label="Pending matches" value={stats.pendingMatches} hint="Ready or waiting" icon={Clock3} accent="amber" trend="-3%" />
         </div>
 
-        {/* Quick actions — 4 tiles */}
+        {/* Quick actions — 4 tiles, TO only */}
         <RoleGuard allow="TO">
           <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {[
@@ -234,7 +222,7 @@ export function DashboardPage() {
 
           {/* Live Matches panel */}
           <section
-            className="overflow-hidden rounded-3xl border border-white/5 backdrop-blur-xl"
+            className="flex flex-col overflow-hidden rounded-3xl border border-white/5 backdrop-blur-xl"
             style={{ backgroundColor: 'rgba(15, 23, 42, 0.6)' }}
           >
             <div className="flex items-center justify-between border-b border-white/5 px-5 py-4">
@@ -246,7 +234,7 @@ export function DashboardPage() {
                   className="inline-flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-1 text-[10px] font-bold uppercase text-red-300"
                   style={uppercase}
                 >
-                  <span className="live-dot h-1.5 w-1.5 rounded-full bg-red-400 shadow-[0_0_8px_rgba(251,44,54,0.8)]" />
+                  <span className="live-dot h-1.5 w-1.5 rounded-full bg-red-400 shadow-[0_0_8px_rgba(251,44,54,0.9)]" />
                   Live
                 </span>
               ) : (
@@ -260,56 +248,62 @@ export function DashboardPage() {
               )}
             </div>
 
-            <div className="space-y-3 p-4">
+            <div className="flex-1 space-y-3 p-4">
               {liveMatches.length === 0 ? (
                 <p className="px-2 py-6 text-center text-xs text-slate-500">No matches queued.</p>
               ) : (
                 liveMatches.map((m) => {
                   const isLive = m.status === 'READY'
+                  const p1Init = m.player1.charAt(0).toUpperCase()
+                  const p2Init = m.player2.charAt(0).toUpperCase()
                   return (
                     <div
                       key={m.id}
-                      className={`relative overflow-hidden rounded-2xl border p-4 transition ${
-                        isLive
-                          ? 'border-red-500/20 bg-red-500/[0.04]'
-                          : 'border-white/5 bg-slate-950/40'
+                      className={`overflow-hidden rounded-2xl border p-4 transition-all duration-200 ${
+                        isLive ? 'border-indigo-500/20 bg-indigo-500/[0.04]' : 'border-white/5 bg-slate-950/40'
                       }`}
                     >
-                      {/* Header row: bracket info + status pill */}
+                      {/* Bracket header */}
                       <div className="mb-3 flex items-center justify-between">
                         <p
                           className="text-[10px] font-bold uppercase text-slate-500"
                           style={uppercase}
                         >
-                          {m.bracketType.replace('_', ' ')} · R{m.round}
+                          {m.bracketType.replace('_', ' ')} · Round {m.round}
                         </p>
                         <MatchStatusBadge status={m.status} />
                       </div>
-                      {/* Match row: player vs score vs player */}
-                      <div className="flex items-center gap-3">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-500/15 text-indigo-300 ring-1 ring-indigo-400/25">
-                              <Swords className="h-3.5 w-3.5" />
-                            </span>
-                            <p className="truncate text-sm font-semibold text-white">{m.player1}</p>
+                      {/* 3-col: player | score | player */}
+                      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+                        {/* Player 1 */}
+                        <div className="flex flex-col items-center gap-1.5">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 to-indigo-800 text-base font-bold text-white ring-2 ring-indigo-500/30">
+                            {p1Init}
                           </div>
+                          <p className="max-w-full truncate text-center text-xs font-semibold text-white">{m.player1}</p>
                         </div>
-                        <div
-                          className="tabular-nums text-base font-bold text-white"
-                          style={tightHeading}
-                        >
-                          {m.score1 ?? 0}
-                          <span className="mx-1.5 text-slate-600">:</span>
-                          {m.score2 ?? 0}
-                        </div>
-                        <div className="min-w-0 flex-1 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <p className="truncate text-sm font-semibold text-white">{m.player2}</p>
-                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/15 text-violet-300 ring-1 ring-violet-400/25">
-                              <Swords className="h-3.5 w-3.5" />
-                            </span>
+                        {/* Score box */}
+                        <div className="flex flex-col items-center gap-1">
+                          <div
+                            className="rounded-xl bg-slate-950/70 px-4 py-2 font-bold text-white"
+                            style={{ fontFamily: 'ui-monospace, monospace', fontSize: '1.25rem', letterSpacing: '-0.02em' }}
+                          >
+                            {m.score1 ?? 0}
+                            <span className="mx-1.5 text-slate-600">:</span>
+                            {m.score2 ?? 0}
                           </div>
+                          {isLive && (
+                            <p className="text-[9px] font-semibold uppercase text-slate-500" style={uppercase}>
+                              Live Map
+                            </p>
+                          )}
+                        </div>
+                        {/* Player 2 */}
+                        <div className="flex flex-col items-center gap-1.5">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-violet-800 text-base font-bold text-white ring-2 ring-violet-500/30">
+                            {p2Init}
+                          </div>
+                          <p className="max-w-full truncate text-center text-xs font-semibold text-white">{m.player2}</p>
                         </div>
                       </div>
                     </div>
@@ -319,11 +313,44 @@ export function DashboardPage() {
 
               <Link
                 to="/matches"
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] py-2.5 text-xs font-semibold text-slate-200 transition hover:-translate-y-[1px] hover:border-indigo-400/30 hover:bg-indigo-500/[0.06]"
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] py-2.5 text-xs font-semibold text-slate-300 transition hover:-translate-y-px hover:border-indigo-400/30 hover:bg-indigo-500/[0.06]"
               >
                 View Full Bracket
                 <ArrowRight className="h-3.5 w-3.5" />
               </Link>
+            </div>
+
+            {/* Platform Uptime bar */}
+            <div className="border-t border-white/5 px-5 py-4">
+              <p
+                className="mb-3 text-[10px] font-semibold uppercase text-slate-500"
+                style={uppercase}
+              >
+                Platform Uptime
+              </p>
+              <div className="flex items-end gap-1">
+                {[70, 85, 60, 90, 75, 95, 88, 92, 100].map((h, i) => (
+                  <div
+                    key={i}
+                    className="flex-1 rounded-sm transition-all duration-500"
+                    style={{
+                      height: `${h * 0.36}px`,
+                      backgroundColor: h === 100 ? '#10b981' : `rgba(16,185,129,${0.3 + h * 0.005})`,
+                      boxShadow: h === 100 ? '0 0 8px rgba(16,185,129,0.6)' : 'none',
+                    }}
+                  />
+                ))}
+              </div>
+              <div className="mt-2 flex items-center justify-between">
+                <p className="text-[10px] text-slate-500">99.98% Service Health</p>
+                <span
+                  className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-emerald-400"
+                  style={uppercase}
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
+                  Live
+                </span>
+              </div>
             </div>
           </section>
         </div>
