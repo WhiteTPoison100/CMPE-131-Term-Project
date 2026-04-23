@@ -6,3 +6,5 @@
 .classpath
 .settings/
 *.log
+*-service-account.json
+firebase*.json

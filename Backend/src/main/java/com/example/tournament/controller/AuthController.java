@@ -1,5 +1,6 @@
 package com.example.tournament.controller;
 
+import com.example.tournament.dto.FirebaseLoginRequest;
 import com.example.tournament.dto.LoginRequest;
 import com.example.tournament.dto.LoginResponse;
 import com.example.tournament.service.AuthService;
@@ -22,5 +23,10 @@ public class AuthController {
     @PostMapping("/login")
     public LoginResponse login(@Valid @RequestBody LoginRequest request) {
         return authService.login(request);
+    }
+
+    @PostMapping("/firebase-login")
+    public LoginResponse firebaseLogin(@Valid @RequestBody FirebaseLoginRequest request) {
+        return authService.firebaseLogin(request);
     }
 }

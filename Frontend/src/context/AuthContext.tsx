@@ -8,7 +8,8 @@ import {
   type ReactNode,
 } from 'react'
 import type { AuthUser } from '../types'
-import { loginApi } from '../services/authService'
+import { loginApi, firebaseLoginApi } from '../services/authService'
+import { signInWithFirebase } from '../lib/firebase'
 
 const STORAGE_KEY = 'tournament_os_user'
 const TOKEN_KEY = 'tournament_os_token'
@@ -16,6 +17,7 @@ const TOKEN_KEY = 'tournament_os_token'
 interface AuthContextValue {
   user: AuthUser | null
   login: (username: string, password: string) => Promise<{ ok: boolean; message?: string }>
+  loginWithFirebase: (email: string, password: string) => Promise<{ ok: boolean; message?: string }>
   logout: () => void
 }
 
@@ -31,6 +33,11 @@ function loadStoredUser(): AuthUser | null {
   }
 }
 
+function storeSession(authUser: AuthUser, token: string) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(authUser))
+  localStorage.setItem(TOKEN_KEY, token)
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(() => loadStoredUser())
 
@@ -38,13 +45,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { authUser, token } = await loginApi(username, password)
       setUser(authUser)
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(authUser))
-      localStorage.setItem(TOKEN_KEY, token)
+      storeSession(authUser, token)
       return { ok: true }
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
         'Invalid credentials.'
+      return { ok: false, message: msg }
+    }
+  }, [])
+
+  const loginWithFirebase = useCallback(async (email: string, password: string) => {
+    try {
+      const idToken = await signInWithFirebase(email, password)
+      const { authUser, token } = await firebaseLoginApi(idToken)
+      setUser(authUser)
+      storeSession(authUser, token)
+      return { ok: true }
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } }; message?: string })?.response?.data
+          ?.message ??
+        (err as { message?: string })?.message ??
+        'Firebase sign-in failed.'
       return { ok: false, message: msg }
     }
   }, [])
@@ -55,7 +78,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(TOKEN_KEY)
   }, [])
 
-  const value = useMemo(() => ({ user, login, logout }), [user, login, logout])
+  const value = useMemo(
+    () => ({ user, login, loginWithFirebase, logout }),
+    [user, login, loginWithFirebase, logout],
+  )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

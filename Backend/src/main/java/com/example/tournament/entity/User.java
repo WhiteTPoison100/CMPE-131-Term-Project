@@ -30,8 +30,19 @@ public class User {
     @Column(nullable = false, unique = true, length = 64)
     private String username;
 
-    @Column(nullable = false)
+    @Column
     private String password;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 16, columnDefinition = "VARCHAR(16) NOT NULL DEFAULT 'DEMO'")
+    @Builder.Default
+    private AuthProvider authProvider = AuthProvider.DEMO;
+
+    @Column(length = 128, unique = true)
+    private String firebaseUid;
+
+    @Column(length = 256)
+    private String email;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 16)

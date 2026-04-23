@@ -25,6 +25,11 @@ app:
     secret: "ChangeThisToALongRandomSecretKeyForProductionUseOnly123456789"
     expiration-ms: 86400000
 
+firebase:
+  # Set to the absolute path of your Firebase service account JSON to enable Firebase auth.
+  # Leave blank to run in demo-only mode.
+  service-account-path: "C:/Users/bhavp/SJSU/CMPE-131/Class Project/Backend/firebase-service-account.json"
+
 logging:
   level:
     org.springframework.security: INFO

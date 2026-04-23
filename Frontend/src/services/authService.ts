@@ -15,11 +15,21 @@ export async function loginApi(
     username,
     password,
   })
-  const authUser: AuthUser = {
+  return { authUser: backendResponseToAuthUser(data), token: data.token }
+}
+
+export async function firebaseLoginApi(
+  idToken: string,
+): Promise<{ authUser: AuthUser; token: string }> {
+  const { data } = await apiClient.post<BackendLoginResponse>('/auth/firebase-login', { idToken })
+  return { authUser: backendResponseToAuthUser(data), token: data.token }
+}
+
+function backendResponseToAuthUser(data: BackendLoginResponse): AuthUser {
+  return {
     id: data.username,
     email: data.username,
     name: data.username,
     role: data.role as AuthUser['role'],
   }
-  return { authUser, token: data.token }
 }
