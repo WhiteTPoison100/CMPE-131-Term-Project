@@ -2,16 +2,19 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Activity,
+  ArrowRight,
   CheckCircle2,
   Clock3,
+  Eye,
+  GitBranch,
   Plus,
   Swords,
   Trophy,
+  UserPlus,
   Users,
 } from 'lucide-react'
 import { useAppData } from '../context/AppDataContext'
 import { useAuth } from '../context/AuthContext'
-import { PageHeader } from '../components/common/PageHeader'
 import { StatCard } from '../components/common/StatCard'
 import { LoadingSpinner } from '../components/common/LoadingSpinner'
 import { RoleGuard } from '../components/guards/RoleGuard'
@@ -33,186 +36,305 @@ export function DashboardPage() {
     const activeTournaments = tournaments.filter((t) => t.status === 'ACTIVE').length
     const completedTournaments = tournaments.filter((t) => t.status === 'COMPLETED').length
     const totalParticipants = participants.length
-    const pendingMatches = matches.filter((m) => m.status === 'PENDING' || m.status === 'READY')
-      .length
-    return {
-      totalTournaments,
-      activeTournaments,
-      completedTournaments,
-      totalParticipants,
-      pendingMatches,
-    }
+    const pendingMatches = matches.filter((m) => m.status === 'PENDING' || m.status === 'READY').length
+    return { totalTournaments, activeTournaments, completedTournaments, totalParticipants, pendingMatches }
   }, [tournaments, participants, matches])
 
+  const participantsByTournament = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const p of participants) map.set(p.tournamentId, (map.get(p.tournamentId) ?? 0) + 1)
+    return map
+  }, [participants])
+
   const recentTournaments = useMemo(
-    () => [...tournaments].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 4),
+    () => [...tournaments].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 5),
     [tournaments],
   )
 
-  const recentMatches = useMemo(
-    () =>
-      [...matches]
-        .filter((m) => m.status !== 'PENDING' || m.round <= 2)
-        .slice(0, 5),
+  const liveMatches = useMemo(
+    () => matches.filter((m) => m.status === 'READY' || m.status === 'PENDING').slice(0, 3),
     [matches],
   )
+  const hasLiveMatch = liveMatches.some((m) => m.status === 'READY')
 
   if (booting) {
     return <LoadingSpinner label="Preparing your dashboard…" />
   }
 
+  const uppercase = { letterSpacing: '0.1em' } as const
+  const tightHeading = { letterSpacing: '-0.03em' } as const
+
   return (
-    <div>
-      <PageHeader
-        title={`Welcome back, ${user?.name?.split(' ')[0] ?? 'there'}`}
-        subtitle="High-level health of your program—swap mock data for live API responses when ready."
-        actions={
+    <div className="relative">
+      {/* Blink keyframes for LIVE indicator */}
+      <style>{`
+        @keyframes liveBlink { 0%, 60%, 100% { opacity: 1; } 30% { opacity: 0.35; } }
+        .live-dot { animation: liveBlink 1.2s ease-in-out infinite; }
+      `}</style>
+
+      {/* Ambient radial glows */}
+      <div
+        className="pointer-events-none absolute -left-32 -top-24 h-[420px] w-[420px] rounded-full blur-[120px] opacity-60"
+        style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.28) 0%, rgba(99,102,241,0) 70%)' }}
+      />
+      <div
+        className="pointer-events-none absolute right-0 top-1/3 h-[480px] w-[480px] rounded-full blur-[120px] opacity-50"
+        style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.25) 0%, rgba(139,92,246,0) 70%)' }}
+      />
+      <div
+        className="pointer-events-none absolute -bottom-20 left-1/4 h-[380px] w-[380px] rounded-full blur-[120px] opacity-40"
+        style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.18) 0%, rgba(16,185,129,0) 70%)' }}
+      />
+
+      <div className="relative">
+        {/* Header */}
+        <div className="mb-10 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <div
+              className="mb-3 inline-flex items-center gap-2 rounded-full border border-indigo-400/20 bg-indigo-500/[0.08] px-3 py-1 text-[11px] font-semibold uppercase text-indigo-200 backdrop-blur-sm"
+              style={uppercase}
+            >
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              </span>
+              Live Console
+            </div>
+            <h1
+              className="text-4xl font-bold text-white sm:text-5xl"
+              style={tightHeading}
+            >
+              Welcome back,{' '}
+              <span className="bg-gradient-to-r from-indigo-300 via-violet-300 to-amber-200 bg-clip-text text-transparent">
+                {user?.name?.split(' ')[0] ?? 'there'}
+              </span>
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm text-slate-400">
+              High-level health of your program — swap mock data for live API responses when ready.
+            </p>
+          </div>
           <RoleGuard allow="TO">
             <Link
               to="/tournaments/new"
-              className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-900/30 transition hover:bg-indigo-500"
+              className="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-indigo-500 via-indigo-600 to-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.6),inset_0_1px_0_0_rgba(255,255,255,0.2)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_40px_-12px_rgba(99,102,241,0.7),inset_0_1px_0_0_rgba(255,255,255,0.25)] active:scale-[0.98]"
             >
               <Plus className="h-4 w-4" />
               New tournament
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
           </RoleGuard>
-        }
-      />
-
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <StatCard
-          label="Total tournaments"
-          value={stats.totalTournaments}
-          icon={Trophy}
-          accent="indigo"
-        />
-        <StatCard
-          label="Active"
-          value={stats.activeTournaments}
-          hint="Live or in-progress events"
-          icon={Activity}
-          accent="emerald"
-        />
-        <StatCard
-          label="Completed"
-          value={stats.completedTournaments}
-          icon={CheckCircle2}
-          accent="violet"
-        />
-        <StatCard
-          label="Participants"
-          value={stats.totalParticipants}
-          icon={Users}
-          accent="sky"
-        />
-        <StatCard
-          label="Pending matches"
-          value={stats.pendingMatches}
-          hint="Ready or waiting to start"
-          icon={Clock3}
-          accent="amber"
-        />
-      </div>
-
-      <RoleGuard allow="TO">
-        <div className="mt-8 flex flex-wrap gap-2">
-          <Link
-            to="/tournaments"
-            className="rounded-xl border border-slate-700 bg-slate-900/50 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:border-indigo-500/40 hover:bg-slate-900"
-          >
-            Browse tournaments
-          </Link>
-          <Link
-            to="/participants"
-            className="rounded-xl border border-slate-700 bg-slate-900/50 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:border-indigo-500/40 hover:bg-slate-900"
-          >
-            Participant roster
-          </Link>
-          <Link
-            to="/matches"
-            className="rounded-xl border border-slate-700 bg-slate-900/50 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:border-indigo-500/40 hover:bg-slate-900"
-          >
-            Brackets & matches
-          </Link>
         </div>
-      </RoleGuard>
 
-      <div className="mt-10 grid gap-8 lg:grid-cols-2">
-        <section className="rounded-2xl border border-slate-800/90 bg-slate-900/40 p-5">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-white">Recent tournaments</h2>
-            <Link to="/tournaments" className="text-xs font-semibold text-indigo-300 hover:text-indigo-200">
-              View all
-            </Link>
-          </div>
-          <div className="overflow-hidden rounded-xl border border-slate-800/80">
-            <table className="min-w-full divide-y divide-slate-800 text-left text-sm">
-              <thead className="bg-slate-950/60">
-                <tr>
-                  <th className="px-3 py-2 font-medium text-slate-400">Name</th>
-                  <th className="px-3 py-2 font-medium text-slate-400">Game</th>
-                  <th className="px-3 py-2 font-medium text-slate-400">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/80">
-                {recentTournaments.map((t) => (
-                  <tr key={t.id} className="hover:bg-slate-800/30">
-                    <td className="px-3 py-2">
-                      <Link
-                        to={`/tournaments/${t.id}`}
-                        className="font-medium text-white hover:text-indigo-200"
-                      >
-                        {t.name}
-                      </Link>
-                    </td>
-                    <td className="px-3 py-2 text-slate-400">{t.gameTitle}</td>
-                    <td className="px-3 py-2">
-                      <TournamentStatusBadge status={t.status} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
+        {/* Stats grid — icon top-left, trend top-right, label & value below */}
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+          <StatCard label="Total tournaments" value={stats.totalTournaments} icon={Trophy} accent="indigo" trend="+12%" />
+          <StatCard label="Active" value={stats.activeTournaments} hint="Live or in-progress" icon={Activity} accent="emerald" trend="+8%" />
+          <StatCard label="Completed" value={stats.completedTournaments} icon={CheckCircle2} accent="violet" trend="0%" />
+          <StatCard label="Participants" value={stats.totalParticipants} icon={Users} accent="sky" trend="+24%" />
+          <StatCard label="Pending matches" value={stats.pendingMatches} hint="Ready or waiting" icon={Clock3} accent="amber" trend="-3%" />
+        </div>
 
-        <section className="rounded-2xl border border-slate-800/90 bg-slate-900/40 p-5">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-white">Recent matches</h2>
-            <Link to="/matches" className="text-xs font-semibold text-indigo-300 hover:text-indigo-200">
-              Open brackets
-            </Link>
-          </div>
-          <ul className="space-y-3">
-            {recentMatches.map((m) => (
-              <li
-                key={m.id}
-                className="flex items-center justify-between rounded-xl border border-slate-800/80 bg-slate-950/40 px-3 py-3"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-800/80 text-indigo-200">
-                    <Swords className="h-4 w-4" />
+        {/* Quick actions — 4 tiles */}
+        <RoleGuard allow="TO">
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {[
+              { to: '/tournaments/new', label: 'Create Tournament', hint: 'Launch new event', icon: Plus, accent: 'indigo' },
+              { to: '/participants', label: 'Add Participant', hint: 'Register new player', icon: UserPlus, accent: 'sky' },
+              { to: '/matches', label: 'Generate Bracket', hint: 'Auto-seed matches', icon: GitBranch, accent: 'violet' },
+              { to: '/matches', label: 'View Matches', hint: 'Real-time oversight', icon: Eye, accent: 'emerald' },
+            ].map(({ to, label, hint, icon: Icon, accent }) => {
+              const chips: Record<string, string> = {
+                indigo: 'bg-indigo-500/15 ring-indigo-400/25 text-indigo-300 group-hover:bg-indigo-500/25',
+                sky: 'bg-sky-500/15 ring-sky-400/25 text-sky-300 group-hover:bg-sky-500/25',
+                violet: 'bg-violet-500/15 ring-violet-400/25 text-violet-300 group-hover:bg-violet-500/25',
+                emerald: 'bg-emerald-500/15 ring-emerald-400/25 text-emerald-300 group-hover:bg-emerald-500/25',
+              }
+              return (
+                <Link
+                  key={label}
+                  to={to}
+                  className="group flex items-center gap-3 rounded-2xl border border-white/5 p-4 backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-indigo-400/30"
+                  style={{ backgroundColor: 'rgba(30, 41, 59, 0.5)' }}
+                >
+                  <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ring-1 transition ${chips[accent]}`}>
+                    <Icon className="h-5 w-5" />
                   </span>
-                  <div>
-                    <p className="text-sm font-medium text-white">
-                      {m.player1} <span className="text-slate-500">vs</span> {m.player2}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {m.bracketType.replace('_', ' ')} · Round {m.round}
-                    </p>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-white">{label}</p>
+                    <p className="truncate text-xs text-slate-500">{hint}</p>
                   </div>
-                </div>
-                <MatchStatusBadge status={m.status} />
-              </li>
-            ))}
-          </ul>
-          <p className="mt-3 text-xs text-slate-500">Timestamps appear when matches sync from the API.</p>
-        </section>
-      </div>
+                </Link>
+              )
+            })}
+          </div>
+        </RoleGuard>
 
-      <p className="mt-8 text-xs text-slate-600">
-        Snapshot generated {formatDate(new Date().toISOString())}
-      </p>
+        {/* Main grid: Recent Tournaments + Live Matches */}
+        <div className="mt-8 grid gap-6 xl:grid-cols-[1.6fr_1fr]">
+          {/* Recent Tournaments — full table */}
+          <section
+            className="overflow-hidden rounded-3xl border border-white/5 backdrop-blur-xl"
+            style={{ backgroundColor: 'rgba(15, 23, 42, 0.6)' }}
+          >
+            <div className="flex items-center justify-between border-b border-white/5 px-5 py-4">
+              <h2 className="text-base font-semibold text-white" style={tightHeading}>
+                Recent Tournaments
+              </h2>
+              <Link
+                to="/tournaments"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-300 transition hover:text-indigo-200"
+              >
+                View All <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-left text-sm">
+                <thead style={{ backgroundColor: 'rgba(2, 6, 23, 0.6)' }}>
+                  <tr>
+                    {['Tournament Name', 'Status', 'Participants', 'Max', 'Date'].map((h) => (
+                      <th
+                        key={h}
+                        className="px-5 py-3 text-[10px] font-semibold uppercase text-slate-500"
+                        style={uppercase}
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {recentTournaments.map((t) => {
+                    const count = participantsByTournament.get(t.id) ?? 0
+                    return (
+                      <tr key={t.id} className="transition hover:bg-slate-800/30">
+                        <td className="px-5 py-4">
+                          <Link
+                            to={`/tournaments/${t.id}`}
+                            className="font-semibold text-white transition hover:text-indigo-300"
+                          >
+                            {t.name}
+                          </Link>
+                          <p className="mt-0.5 text-xs text-slate-500">{t.gameTitle}</p>
+                        </td>
+                        <td className="px-5 py-4">
+                          <TournamentStatusBadge status={t.status} />
+                        </td>
+                        <td className="px-5 py-4 tabular-nums text-slate-300">
+                          {count} / {t.maxParticipants}
+                        </td>
+                        <td className="px-5 py-4 tabular-nums text-slate-300">{t.maxParticipants}</td>
+                        <td className="px-5 py-4 text-slate-400">{formatDate(t.createdAt)}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          {/* Live Matches panel */}
+          <section
+            className="overflow-hidden rounded-3xl border border-white/5 backdrop-blur-xl"
+            style={{ backgroundColor: 'rgba(15, 23, 42, 0.6)' }}
+          >
+            <div className="flex items-center justify-between border-b border-white/5 px-5 py-4">
+              <h2 className="text-base font-semibold text-white" style={tightHeading}>
+                Live Matches
+              </h2>
+              {hasLiveMatch ? (
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-1 text-[10px] font-bold uppercase text-red-300"
+                  style={uppercase}
+                >
+                  <span className="live-dot h-1.5 w-1.5 rounded-full bg-red-400 shadow-[0_0_8px_rgba(251,44,54,0.8)]" />
+                  Live
+                </span>
+              ) : (
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-full border border-white/5 bg-slate-800/60 px-2.5 py-1 text-[10px] font-bold uppercase text-slate-500"
+                  style={uppercase}
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-slate-600" />
+                  Idle
+                </span>
+              )}
+            </div>
+
+            <div className="space-y-3 p-4">
+              {liveMatches.length === 0 ? (
+                <p className="px-2 py-6 text-center text-xs text-slate-500">No matches queued.</p>
+              ) : (
+                liveMatches.map((m) => {
+                  const isLive = m.status === 'READY'
+                  return (
+                    <div
+                      key={m.id}
+                      className={`relative overflow-hidden rounded-2xl border p-4 transition ${
+                        isLive
+                          ? 'border-red-500/20 bg-red-500/[0.04]'
+                          : 'border-white/5 bg-slate-950/40'
+                      }`}
+                    >
+                      {/* Header row: bracket info + status pill */}
+                      <div className="mb-3 flex items-center justify-between">
+                        <p
+                          className="text-[10px] font-bold uppercase text-slate-500"
+                          style={uppercase}
+                        >
+                          {m.bracketType.replace('_', ' ')} · R{m.round}
+                        </p>
+                        <MatchStatusBadge status={m.status} />
+                      </div>
+                      {/* Match row: player vs score vs player */}
+                      <div className="flex items-center gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-500/15 text-indigo-300 ring-1 ring-indigo-400/25">
+                              <Swords className="h-3.5 w-3.5" />
+                            </span>
+                            <p className="truncate text-sm font-semibold text-white">{m.player1}</p>
+                          </div>
+                        </div>
+                        <div
+                          className="tabular-nums text-base font-bold text-white"
+                          style={tightHeading}
+                        >
+                          {m.score1 ?? 0}
+                          <span className="mx-1.5 text-slate-600">:</span>
+                          {m.score2 ?? 0}
+                        </div>
+                        <div className="min-w-0 flex-1 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <p className="truncate text-sm font-semibold text-white">{m.player2}</p>
+                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/15 text-violet-300 ring-1 ring-violet-400/25">
+                              <Swords className="h-3.5 w-3.5" />
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })
+              )}
+
+              <Link
+                to="/matches"
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] py-2.5 text-xs font-semibold text-slate-200 transition hover:-translate-y-[1px] hover:border-indigo-400/30 hover:bg-indigo-500/[0.06]"
+              >
+                View Full Bracket
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </section>
+        </div>
+
+        <p
+          className="mt-10 text-center text-[10px] font-semibold uppercase text-slate-600"
+          style={uppercase}
+        >
+          Snapshot generated {formatDate(new Date().toISOString())}
+        </p>
+      </div>
     </div>
   )
 }
