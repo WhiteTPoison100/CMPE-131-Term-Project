@@ -1,19 +1,17 @@
-import { Bell, ChevronDown, Search, Settings } from 'lucide-react'
-import { useAuth } from '../../context/AuthContext'
+import { Bell, Search, Settings } from 'lucide-react'
+import { useNavigate, useLocation } from 'react-router-dom'
+import { UserDropdown } from './UserDropdown'
 
 interface NavbarProps {
   onMenuClick?: () => void
 }
 
-function getGreeting() {
-  const h = new Date().getHours()
-  if (h < 12) return 'Good Morning'
-  if (h < 17) return 'Good Afternoon'
-  return 'Good Evening'
-}
-
 export function Navbar({ onMenuClick }: NavbarProps) {
-  const { user } = useAuth()
+  const navigate  = useNavigate()
+  const { pathname } = useLocation()
+
+  const onSettings     = pathname === '/settings'
+  const onNotifications = pathname === '/notifications'
 
   return (
     <header
@@ -45,38 +43,39 @@ export function Navbar({ onMenuClick }: NavbarProps) {
       </div>
 
       <div className="flex flex-1 items-center justify-end gap-3">
-        {/* Icon actions */}
+
+        {/* Notifications bell — navigates to /notifications */}
         <button
           type="button"
-          className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-white/5 bg-white/[0.04] text-slate-400 transition hover:border-white/10 hover:bg-white/[0.08] hover:text-white"
+          onClick={() => navigate('/notifications')}
           aria-label="Notifications"
+          className={`relative flex h-9 w-9 items-center justify-center rounded-xl border transition ${
+            onNotifications
+              ? 'border-indigo-500/30 bg-indigo-500/10 text-indigo-300 shadow-[0_0_0_1px_rgba(99,102,241,0.2)]'
+              : 'border-white/5 bg-white/[0.04] text-slate-400 hover:border-white/10 hover:bg-white/[0.08] hover:text-white'
+          }`}
         >
           <Bell className="h-4 w-4" />
+          {/* Unread dot */}
           <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-indigo-400 shadow-[0_0_6px_rgba(99,102,241,0.8)]" />
         </button>
+
+        {/* Settings gear — navigates to /settings */}
         <button
           type="button"
-          className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/5 bg-white/[0.04] text-slate-400 transition hover:border-white/10 hover:bg-white/[0.08] hover:text-white"
+          onClick={() => navigate('/settings')}
           aria-label="Settings"
+          className={`flex h-9 w-9 items-center justify-center rounded-xl border transition ${
+            onSettings
+              ? 'border-indigo-500/30 bg-indigo-500/10 text-indigo-300 shadow-[0_0_0_1px_rgba(99,102,241,0.2)]'
+              : 'border-white/5 bg-white/[0.04] text-slate-400 hover:border-white/10 hover:bg-white/[0.08] hover:text-white'
+          }`}
         >
           <Settings className="h-4 w-4" />
         </button>
 
-        {/* User greeting */}
-        {user && (
-          <button
-            type="button"
-            className="flex items-center gap-2 rounded-xl border border-white/5 bg-white/[0.04] px-3 py-2 text-sm transition hover:border-white/10 hover:bg-white/[0.07]"
-          >
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-[10px] font-bold text-white">
-              {user.name?.charAt(0) ?? '?'}
-            </div>
-            <span className="hidden text-slate-200 sm:block">
-              {getGreeting()}, <span className="font-semibold text-white">{user.name?.split(' ')[0]}</span>
-            </span>
-            <ChevronDown className="h-3.5 w-3.5 text-slate-500" />
-          </button>
-        )}
+        {/* User dropdown */}
+        <UserDropdown />
       </div>
     </header>
   )

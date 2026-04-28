@@ -78,7 +78,7 @@ export function MainLayout() {
       ) : null}
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <Navbar onMenuClick={() => setOpen(true)} />
-        <main className="flex-1 overflow-y-auto px-4 py-8 sm:px-6 lg:px-10">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto px-4 py-8 sm:px-6 lg:px-10">
           <Outlet />
         </main>
         <Footer />

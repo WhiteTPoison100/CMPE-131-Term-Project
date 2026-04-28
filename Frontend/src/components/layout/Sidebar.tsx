@@ -3,18 +3,22 @@ import {
   LayoutDashboard,
   LogIn,
   Plus,
+  ShieldCheck,
   Swords,
   Trophy,
   Users,
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 
-const navItems = [
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/tournaments', label: 'Tournaments', icon: Trophy },
+// Settings & Notifications are intentionally excluded here —
+// they are only reachable via the top-bar icons or the user dropdown.
+const baseNavItems = [
+  { to: '/dashboard',    label: 'Dashboard',    icon: LayoutDashboard },
+  { to: '/tournaments',  label: 'Tournaments',  icon: Trophy },
   { to: '/participants', label: 'Participants', icon: Users },
-  { to: '/matches', label: 'Matches', icon: Swords },
+  { to: '/matches',      label: 'Matches',      icon: Swords },
 ]
+const adminNavItem = { to: '/admin', label: 'Admin Panel', icon: ShieldCheck }
 
 export function Sidebar() {
   const { user, logout } = useAuth()
@@ -36,7 +40,7 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="flex flex-1 flex-col gap-0.5 px-3 pt-4" aria-label="Main">
-        {navItems.map(({ to, label, icon: Icon }) => (
+        {[...baseNavItems, ...(user?.role === 'TO' ? [adminNavItem] : [])].map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
@@ -76,9 +80,13 @@ export function Sidebar() {
 
         {/* User profile / logout */}
         <div className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.03] px-3 py-2.5">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-xs font-bold text-white">
-            {user?.name?.charAt(0) ?? '?'}
-          </div>
+          {user?.photoUrl ? (
+            <img src={user.photoUrl} alt={user.name} className="h-8 w-8 shrink-0 rounded-full object-cover ring-2 ring-white/10" />
+          ) : (
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-xs font-bold text-white">
+              {user?.name?.charAt(0) ?? '?'}
+            </div>
+          )}
           <div className="min-w-0 flex-1">
             <p className="truncate text-xs font-semibold text-white">{user?.name ?? 'Guest'}</p>
             <p className="truncate text-[10px] text-indigo-300" style={{ letterSpacing: '0.04em' }}>

@@ -16,6 +16,7 @@ export interface AuthUser {
   name: string
   role: UserRole
   firebaseProvider?: FirebaseProvider
+  photoUrl?: string
 }
 
 export interface Tournament {

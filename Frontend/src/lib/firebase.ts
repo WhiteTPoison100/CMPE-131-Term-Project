@@ -9,6 +9,7 @@ import {
   fetchSignInMethodsForEmail,
   signOut as firebaseSignOut,
 } from 'firebase/auth'
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -29,6 +30,31 @@ const app =
     : getApps()[0]
 
 export const firebaseAuth = firebaseEnabled ? getAuth(app) : null
+export const firebaseStorage = firebaseEnabled ? getStorage(app) : null
+
+/**
+ * Upload a profile photo to Firebase Storage.
+ * Path: profile-photos/{username}/avatar.{ext}
+ * Returns the public CDN download URL.
+ */
+export async function uploadProfilePhoto(
+  username: string,
+  file: File,
+  onProgress?: (pct: number) => void,
+): Promise<string> {
+  if (!firebaseStorage) throw new Error('Firebase Storage is not configured.')
+  const ext = file.name.split('.').pop() ?? 'jpg'
+  const storageRef = ref(firebaseStorage, `profile-photos/${username}/avatar.${ext}`)
+  return new Promise((resolve, reject) => {
+    const task = uploadBytesResumable(storageRef, file, { contentType: file.type })
+    task.on(
+      'state_changed',
+      snap => onProgress?.(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),
+      reject,
+      () => getDownloadURL(task.snapshot.ref).then(resolve).catch(reject),
+    )
+  })
+}
 
 // ── sign-in methods ────────────────────────────────────────────────────────
 

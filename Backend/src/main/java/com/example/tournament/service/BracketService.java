@@ -2,6 +2,7 @@ package com.example.tournament.service;
 
 import com.example.tournament.dto.BracketResponse;
 import com.example.tournament.dto.MatchResponse;
+import com.example.tournament.entity.ActivityAction;
 import com.example.tournament.entity.Bracket;
 import com.example.tournament.entity.Tournament;
 import com.example.tournament.entity.TournamentStatus;
@@ -13,6 +14,7 @@ import com.example.tournament.repository.TournamentRepository;
 import com.example.tournament.util.BracketBuildResult;
 import com.example.tournament.util.BracketWire;
 import com.example.tournament.util.DoubleEliminationBracketFactory;
+import com.example.tournament.util.SecurityUtils;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.util.List;
@@ -29,6 +31,7 @@ public class BracketService {
     private final MatchRepository matchRepository;
     private final EntityManager entityManager;
     private final MatchDtoMapper matchDtoMapper;
+    private final ActivityLogService activityLogService;
 
     public BracketService(
             TournamentRepository tournamentRepository,
@@ -36,13 +39,15 @@ public class BracketService {
             BracketRepository bracketRepository,
             MatchRepository matchRepository,
             EntityManager entityManager,
-            MatchDtoMapper matchDtoMapper) {
+            MatchDtoMapper matchDtoMapper,
+            ActivityLogService activityLogService) {
         this.tournamentRepository = tournamentRepository;
         this.participantRepository = participantRepository;
         this.bracketRepository = bracketRepository;
         this.matchRepository = matchRepository;
         this.entityManager = entityManager;
         this.matchDtoMapper = matchDtoMapper;
+        this.activityLogService = activityLogService;
     }
 
     @Transactional(readOnly = true)
@@ -95,6 +100,12 @@ public class BracketService {
         tournamentRepository.save(t);
 
         List<MatchResponse> responses = built.matches().stream().map(matchDtoMapper::toResponse).toList();
+
+        // Audit log
+        String actor = SecurityUtils.requireUsername();
+        activityLogService.log(actor, ActivityAction.BRACKET_GENERATED, null,
+                t.getName() + " (" + participants.size() + " participants)");
+
         return new BracketResponse(bracket.getId(), t.getId(), bracket.getCreatedAt(), responses);
     }
 

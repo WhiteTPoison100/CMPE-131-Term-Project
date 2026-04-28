@@ -54,4 +54,24 @@ public class User {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 16)
     private Role role;
+
+    /**
+     * Username of the TO who promoted this user to TO role.
+     * Null for original/seed organizers.
+     * Used to prevent a newly-promoted TO from demoting their promoter.
+     */
+    @Column(length = 64)
+    private String promotedBy;
+
+    /** Firebase Storage CDN URL for the user's profile photo. */
+    @Column(length = 512)
+    private String photoUrl;
+
+    /**
+     * When false the account is deactivated (soft-deleted).
+     * The user cannot log in and their profile is hidden.
+     */
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean active = true;
 }
