@@ -8,7 +8,6 @@ import {
   Eye,
   GitBranch,
   Plus,
-  Swords,
   Trophy,
   UserPlus,
   Users,

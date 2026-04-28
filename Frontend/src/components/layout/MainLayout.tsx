@@ -13,6 +13,7 @@ import { Navbar } from './Navbar'
 import { Sidebar } from './Sidebar'
 import { Footer } from './Footer'
 import { useAuth } from '../../context/AuthContext'
+import { usePageTransition } from '../../context/TransitionContext'
 
 const mobileLink =
   'flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-slate-200 hover:bg-slate-800'
@@ -20,6 +21,9 @@ const mobileLink =
 export function MainLayout() {
   const [open, setOpen] = useState(false)
   const { user, logout } = useAuth()
+  const { runTransition } = usePageTransition()
+
+  const handleLogout = () => runTransition('logout', logout)
 
   return (
     <div className="flex h-svh overflow-hidden bg-slate-950">
@@ -62,7 +66,7 @@ export function MainLayout() {
                 Matches / Brackets
               </NavLink>
               {user ? (
-                <button type="button" className={`${mobileLink} text-left`} onClick={() => logout()}>
+                <button type="button" className={`${mobileLink} text-left`} onClick={handleLogout}>
                   <LogOut className="h-5 w-5" />
                   Logout
                 </button>

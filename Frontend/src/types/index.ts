@@ -59,3 +59,19 @@ export interface DashboardStats {
   totalParticipants: number
   pendingMatches: number
 }
+
+export type NotificationType =
+  | 'tournament'
+  | 'match'
+  | 'participant'
+  | 'system'
+  | 'role'
+
+export interface Notification {
+  id: string
+  type: NotificationType
+  title: string
+  description?: string
+  timestamp: string
+  isRead: boolean
+}

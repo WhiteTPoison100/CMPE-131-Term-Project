@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
+import { usePageTransition } from '../context/TransitionContext'
 import { Radio, ShieldCheck, Swords, Trophy, Zap } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { MOCK_CREDENTIALS } from '../data/mockUsers'
@@ -102,7 +103,8 @@ function ErrorMsg({ msg }: { msg: string | null }) {
 export function LoginPage() {
   const { user, loading, login, signIn, signUp, signInWithGoogle } = useAuth()
   const location = useLocation()
-  const from = (location.state as { from?: string } | null)?.from ?? '/dashboard'
+  const { flashLogin } = usePageTransition()
+  const savedLanding = '/' + (localStorage.getItem('tournament_os_landing') ?? 'dashboard')
 
   const defaultTab: Tab = firebaseEnabled ? 'signin' : 'demo'
   const [tab, setTab] = useState<Tab>(defaultTab)
@@ -120,7 +122,7 @@ export function LoginPage() {
   const [demoPassword, setDemoPassword] = useState('')
 
   if (user) {
-    return <Navigate to={from === '/login' ? '/dashboard' : from} replace />
+    return <Navigate to={savedLanding} replace />
   }
 
   const switchTab = (t: Tab) => { setTab(t); setError(null) }
@@ -129,7 +131,8 @@ export function LoginPage() {
     e.preventDefault()
     setError(null)
     const res = await signIn(siEmail, siPassword)
-    if (!res.ok) setError(res.message ?? 'Sign-in failed.')
+    if (res.ok) flashLogin(siEmail.split('@')[0])
+    else setError(res.message ?? 'Sign-in failed.')
   }
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -138,20 +141,23 @@ export function LoginPage() {
     if (suPassword !== suConfirm) { setError('Passwords do not match.'); return }
     if (suPassword.length < 6) { setError('Password must be at least 6 characters.'); return }
     const res = await signUp(suEmail, suPassword, suName)
-    if (!res.ok) setError(res.message ?? 'Sign-up failed.')
+    if (res.ok) flashLogin(suName)
+    else setError(res.message ?? 'Sign-up failed.')
   }
 
   const handleGoogle = async () => {
     setError(null)
     const res = await signInWithGoogle()
-    if (!res.ok) setError(res.message ?? 'Google sign-in failed.')
+    if (res.ok) flashLogin(user?.name)
+    else setError(res.message ?? 'Google sign-in failed.')
   }
 
   const handleDemo = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     const res = await login(demoUsername, demoPassword)
-    if (!res.ok) setError(res.message ?? 'Login failed.')
+    if (res.ok) flashLogin(demoUsername)
+    else setError(res.message ?? 'Login failed.')
   }
 
   const fillDemo = (role: 'organizer' | 'viewer') => {

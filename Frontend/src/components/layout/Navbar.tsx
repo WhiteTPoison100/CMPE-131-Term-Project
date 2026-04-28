@@ -1,17 +1,18 @@
-import { Bell, Search, Settings } from 'lucide-react'
+import { Search, Settings } from 'lucide-react' // Search kept for mobile menu button
 import { useNavigate, useLocation } from 'react-router-dom'
 import { UserDropdown } from './UserDropdown'
+import { NotificationsDropdown } from '../notifications/NotificationsDropdown'
+import { SearchBar } from './SearchBar'
 
 interface NavbarProps {
   onMenuClick?: () => void
 }
 
 export function Navbar({ onMenuClick }: NavbarProps) {
-  const navigate  = useNavigate()
+  const navigate = useNavigate()
   const { pathname } = useLocation()
 
-  const onSettings     = pathname === '/settings'
-  const onNotifications = pathname === '/notifications'
+  const onSettings = pathname === '/settings'
 
   return (
     <header
@@ -33,34 +34,16 @@ export function Navbar({ onMenuClick }: NavbarProps) {
       </button>
 
       {/* Search bar */}
-      <div className="relative hidden flex-1 max-w-md lg:block">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-        <input
-          type="search"
-          placeholder="Search tournaments, players…"
-          className="w-full rounded-xl border border-white/5 bg-white/[0.04] py-2 pl-9 pr-4 text-sm text-slate-300 outline-none placeholder:text-slate-600 focus:border-indigo-500/40 focus:bg-white/[0.06] focus:ring-2 focus:ring-indigo-500/20 transition"
-        />
+      <div className="hidden flex-1 lg:block">
+        <SearchBar />
       </div>
 
       <div className="flex flex-1 items-center justify-end gap-3">
 
-        {/* Notifications bell — navigates to /notifications */}
-        <button
-          type="button"
-          onClick={() => navigate('/notifications')}
-          aria-label="Notifications"
-          className={`relative flex h-9 w-9 items-center justify-center rounded-xl border transition ${
-            onNotifications
-              ? 'border-indigo-500/30 bg-indigo-500/10 text-indigo-300 shadow-[0_0_0_1px_rgba(99,102,241,0.2)]'
-              : 'border-white/5 bg-white/[0.04] text-slate-400 hover:border-white/10 hover:bg-white/[0.08] hover:text-white'
-          }`}
-        >
-          <Bell className="h-4 w-4" />
-          {/* Unread dot */}
-          <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-indigo-400 shadow-[0_0_6px_rgba(99,102,241,0.8)]" />
-        </button>
+        {/* Notifications bell — self-contained dropdown popup */}
+        <NotificationsDropdown />
 
-        {/* Settings gear — navigates to /settings */}
+        {/* Settings gear — navigates to /settings page */}
         <button
           type="button"
           onClick={() => navigate('/settings')}

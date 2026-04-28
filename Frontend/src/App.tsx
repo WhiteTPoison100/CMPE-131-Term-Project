@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
+import { PageTransitionProvider } from './context/TransitionContext'
 import { MainLayout } from './components/layout/MainLayout'
 import { RequireAuth } from './routes/RequireAuth'
 import { LoginPage } from './pages/LoginPage'
@@ -18,6 +19,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+      <PageTransitionProvider>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route element={<RequireAuth />}>
@@ -36,6 +38,7 @@ export default function App() {
               </Route>
             </Route>
           </Routes>
+      </PageTransitionProvider>
       </AuthProvider>
     </BrowserRouter>
   )

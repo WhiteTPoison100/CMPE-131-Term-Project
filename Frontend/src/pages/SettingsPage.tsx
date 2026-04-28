@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { usePageTransition } from '../context/TransitionContext'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
@@ -514,13 +515,17 @@ function AuthMethodBadge({ provider, method }: { provider?: string; method: stri
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
-export function SettingsPage({ insidePanel = false }: { insidePanel?: boolean }) {
+export function SettingsPage() {
+  const insidePanel = false
   const { user, updateUserProfile, logout } = useAuth()
   const navigate = useNavigate()
+  const { runTransition } = usePageTransition()
 
   const [displayName, setDisplayName] = useState(user?.name ?? '')
   const [photoUrl, setPhotoUrl]       = useState(user?.photoUrl ?? '')
-  const [landing, setLanding]         = useState('dashboard')
+  const [landing, setLanding]         = useState(
+    () => localStorage.getItem('tournament_os_landing') ?? 'dashboard'
+  )
 
   const [saving, setSaving]       = useState(false)
   const [saved, setSaved]         = useState(false)
@@ -536,19 +541,16 @@ export function SettingsPage({ insidePanel = false }: { insidePanel?: boolean })
   // ── Deactivate handler ────────────────────────────────────────
   const handleDeactivate = async () => {
     await deactivateAccount()
-    logout()
-    navigate('/login')
+    runTransition('logout', () => { logout(); navigate('/login') })
   }
 
   // ── Delete handler ────────────────────────────────────────────
   const handleDelete = async () => {
     await deleteAccount()
-    // Also delete Firebase Auth user if applicable
     if (firebaseAuth?.currentUser) {
       await deleteUser(firebaseAuth.currentUser)
     }
-    logout()
-    navigate('/login')
+    runTransition('logout', () => { logout(); navigate('/login') })
   }
 
   const handlePhotoUploaded = (url: string) => {
@@ -576,6 +578,7 @@ export function SettingsPage({ insidePanel = false }: { insidePanel?: boolean })
         })
       }
       updateUserProfile({ name: displayName, photoUrl: photoUrl || undefined })
+      localStorage.setItem('tournament_os_landing', landing)
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
     } catch {

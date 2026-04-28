@@ -21,3 +21,30 @@
     @apply min-h-svh;
   }
 }
+
+/* Notifications: keep scrollbar hidden until interaction */
+.notifications-scroll {
+  scrollbar-width: none;
+  scrollbar-color: rgba(144, 143, 160, 0.65) transparent;
+}
+
+.notifications-scroll::-webkit-scrollbar {
+  width: 0;
+}
+
+.notifications-scroll:hover {
+  scrollbar-width: thin;
+}
+
+.notifications-scroll:hover::-webkit-scrollbar {
+  width: 6px;
+}
+
+.notifications-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.notifications-scroll::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background-color: rgba(144, 143, 160, 0.65);
+}

@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { usePageTransition } from '../../context/TransitionContext'
 
 // ── Role badge ────────────────────────────────────────────────────────────────
 
@@ -100,6 +101,7 @@ function DropdownItem({ icon: Icon, label, sublabel, onClick, variant = 'default
 export function UserDropdown() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const { runTransition } = usePageTransition()
   const [open, setOpen] = useState(false)
   const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({})
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -141,7 +143,7 @@ export function UserDropdown() {
 
   const handleLogout = () => {
     setOpen(false)
-    logout()
+    runTransition('logout', logout)
   }
 
   return (
