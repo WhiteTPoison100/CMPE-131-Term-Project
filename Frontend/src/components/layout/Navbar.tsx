@@ -1,83 +1,78 @@
-import { Link, useLocation } from 'react-router-dom'
-import { Menu, Swords } from 'lucide-react'
-import { useAuth } from '../../context/AuthContext'
+import { Menu, Settings } from 'lucide-react'
+import { useNavigate, useLocation } from 'react-router-dom'
+import { UserDropdown } from './UserDropdown'
+import { NotificationsDropdown } from '../notifications/NotificationsDropdown'
+import { SearchBar } from './SearchBar'
 
 interface NavbarProps {
   onMenuClick?: () => void
 }
 
 export function Navbar({ onMenuClick }: NavbarProps) {
-  const { user } = useAuth()
+  const navigate = useNavigate()
   const { pathname } = useLocation()
 
-  const crumb =
-    pathname === '/dashboard'
-      ? 'Dashboard'
-      : pathname.startsWith('/tournaments/new')
-        ? 'Create tournament'
-        : pathname.startsWith('/tournaments/')
-          ? 'Tournament'
-          : pathname.startsWith('/tournaments')
-            ? 'Tournaments'
-            : pathname.startsWith('/participants')
-              ? 'Participants'
-              : pathname.startsWith('/matches')
-                ? 'Matches'
-                : pathname === '/login'
-                  ? 'Login'
-                  : 'Tournament OS'
+  const onSettings = pathname === '/settings'
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-800/80 bg-slate-950/85 backdrop-blur-md">
-      <div className="flex h-16 items-center justify-between gap-3 px-4 sm:px-6">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            className="inline-flex rounded-lg p-2 text-slate-300 hover:bg-slate-800 lg:hidden"
-            onClick={onMenuClick}
-            aria-label="Open navigation menu"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
-          <Link to="/dashboard" className="flex items-center gap-2 lg:hidden">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-md">
-              <Swords className="h-5 w-5" />
-            </span>
-            <span className="text-sm font-semibold text-white">Tournament OS</span>
-          </Link>
-          <div className="hidden lg:block">
-            <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Overview</p>
-            <p className="text-sm font-semibold text-white">{crumb}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          {user ? (
-            <>
-              <div className="hidden text-right sm:block">
-                <p className="text-sm font-medium text-white">{user.name}</p>
-                <p className="text-xs text-slate-500">
-                  {user.role === 'TO' ? 'Tournament Organizer' : 'Viewer'}
-                </p>
-              </div>
-              <span
-                className={`hidden rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset sm:inline-flex ${
-                  user.role === 'TO'
-                    ? 'bg-indigo-500/15 text-indigo-200 ring-indigo-500/30'
-                    : 'bg-slate-600/30 text-slate-200 ring-slate-500/35'
-                }`}
-              >
-                {user.role === 'TO' ? 'Organizer' : 'Viewer'}
-              </span>
-            </>
-          ) : (
-            <Link
-              to="/login"
-              className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-900/30 transition hover:bg-indigo-500"
-            >
-              Sign in
-            </Link>
-          )}
-        </div>
+    <header
+      className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-4 px-5"
+      style={{
+        background: 'rgba(10, 15, 30, 0.82)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        borderBottom: '1px solid rgba(192, 193, 255, 0.07)',
+        boxShadow: '0 1px 0 rgba(255,255,255,0.025), 0 4px 24px rgba(0,0,0,0.25)',
+      }}
+    >
+      {/* Subtle indigo ambient glow on the left edge */}
+      <div
+        className="pointer-events-none absolute left-0 top-0 h-full w-32 opacity-20"
+        style={{
+          background: 'linear-gradient(90deg, rgba(99,102,241,0.25) 0%, transparent 100%)',
+        }}
+      />
+
+      {/* ── Mobile menu button ─────────────────────────────────────────── */}
+      <button
+        type="button"
+        className="relative inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.04] text-slate-400 transition-all duration-200 hover:border-white/10 hover:bg-white/[0.08] hover:text-white lg:hidden"
+        onClick={onMenuClick}
+        aria-label="Open navigation menu"
+      >
+        <Menu className="h-4 w-4" />
+      </button>
+
+      {/* ── Search bar ────────────────────────────────────────────────── */}
+      <div className="hidden flex-1 lg:block">
+        <SearchBar />
+      </div>
+
+      {/* ── Right actions ─────────────────────────────────────────────── */}
+      <div className="flex flex-1 items-center justify-end gap-2.5">
+
+        {/* Notifications bell */}
+        <NotificationsDropdown />
+
+        {/* Settings */}
+        <button
+          type="button"
+          onClick={() => navigate('/settings')}
+          aria-label="Settings"
+          title="Settings"
+          className={`relative flex h-9 w-9 items-center justify-center rounded-xl border transition-all duration-200 ${
+            onSettings
+              ? 'border-indigo-500/35 bg-indigo-500/12 text-indigo-300 shadow-[0_0_0_1px_rgba(99,102,241,0.2),0_0_16px_rgba(99,102,241,0.12)]'
+              : 'border-white/[0.06] bg-white/[0.04] text-slate-400 hover:border-white/10 hover:bg-white/[0.08] hover:text-white'
+          }`}
+        >
+          <Settings
+            className={`h-4 w-4 transition-transform duration-500 ${onSettings ? 'rotate-90' : 'hover:rotate-45'}`}
+          />
+        </button>
+
+        {/* User dropdown */}
+        <UserDropdown />
       </div>
     </header>
   )

@@ -16,6 +16,7 @@ export interface AuthUser {
   name: string
   role: UserRole
   firebaseProvider?: FirebaseProvider
+  photoUrl?: string
 }
 
 export interface Tournament {
@@ -57,4 +58,20 @@ export interface DashboardStats {
   completedTournaments: number
   totalParticipants: number
   pendingMatches: number
+}
+
+export type NotificationType =
+  | 'tournament'
+  | 'match'
+  | 'participant'
+  | 'system'
+  | 'role'
+
+export interface Notification {
+  id: string
+  type: NotificationType
+  title: string
+  description?: string
+  timestamp: string
+  isRead: boolean
 }

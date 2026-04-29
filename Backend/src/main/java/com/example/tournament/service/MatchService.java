@@ -2,6 +2,7 @@ package com.example.tournament.service;
 
 import com.example.tournament.dto.MatchResponse;
 import com.example.tournament.dto.ScoreSubmitRequest;
+import com.example.tournament.entity.ActivityAction;
 import com.example.tournament.entity.Match;
 import com.example.tournament.entity.MatchBracketType;
 import com.example.tournament.entity.MatchStatus;
@@ -11,6 +12,7 @@ import com.example.tournament.entity.TournamentStatus;
 import com.example.tournament.exception.ApiException;
 import com.example.tournament.repository.MatchRepository;
 import com.example.tournament.repository.TournamentRepository;
+import com.example.tournament.util.SecurityUtils;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -23,12 +25,17 @@ public class MatchService {
     private final MatchRepository matchRepository;
     private final TournamentRepository tournamentRepository;
     private final MatchDtoMapper matchDtoMapper;
+    private final ActivityLogService activityLogService;
 
     public MatchService(
-            MatchRepository matchRepository, TournamentRepository tournamentRepository, MatchDtoMapper matchDtoMapper) {
+            MatchRepository matchRepository,
+            TournamentRepository tournamentRepository,
+            MatchDtoMapper matchDtoMapper,
+            ActivityLogService activityLogService) {
         this.matchRepository = matchRepository;
         this.tournamentRepository = tournamentRepository;
         this.matchDtoMapper = matchDtoMapper;
+        this.activityLogService = activityLogService;
     }
 
     @Transactional(readOnly = true)
@@ -84,6 +91,14 @@ public class MatchService {
             t.setStatus(TournamentStatus.COMPLETED);
             tournamentRepository.save(t);
         }
+
+        // Audit log
+        String actor = SecurityUtils.requireUsername();
+        String p1tag = m.getPlayer1() != null ? m.getPlayer1().getGamerTag() : "TBD";
+        String p2tag = m.getPlayer2() != null ? m.getPlayer2().getGamerTag() : "TBD";
+        String detail = p1tag + " " + s1 + " – " + s2 + " " + p2tag
+                + " (Match #" + matchId + ")";
+        activityLogService.log(actor, ActivityAction.SCORE_SUBMITTED, null, detail);
 
         return matchDtoMapper.toResponse(find(matchId));
     }

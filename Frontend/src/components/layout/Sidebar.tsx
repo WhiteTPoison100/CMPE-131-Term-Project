@@ -1,73 +1,248 @@
 import { NavLink } from 'react-router-dom'
 import {
+  Gamepad2,
   LayoutDashboard,
-  LogIn,
   LogOut,
+  Plus,
+  Settings,
+  ShieldCheck,
   Swords,
   Trophy,
   Users,
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
+import { usePageTransition } from '../../context/TransitionContext'
 
-const linkBase =
-  'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400 transition hover:bg-slate-800/80 hover:text-white'
+// ── Reusable nav item ─────────────────────────────────────────────────────────
 
-const linkActive = 'bg-indigo-500/15 text-white ring-1 ring-indigo-500/25'
+function SideNavItem({ to, label, icon: Icon }: { to: string; label: string; icon: React.ElementType }) {
+  return (
+    <NavLink
+      to={to}
+      className={({ isActive }) =>
+        `group relative flex items-center gap-3 overflow-hidden rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-300 ${
+          isActive
+            ? 'text-indigo-200'
+            : 'text-slate-400 hover:bg-white/[0.05] hover:text-white'
+        }`
+      }
+    >
+      {({ isActive }) => (
+        <>
+          {/* Active gradient background */}
+          {isActive && (
+            <div
+              className="pointer-events-none absolute inset-0 rounded-xl"
+              style={{
+                background:
+                  'linear-gradient(90deg, rgba(99,102,241,0.22) 0%, rgba(99,102,241,0.06) 55%, transparent 100%)',
+              }}
+            />
+          )}
+
+          {/* Active glowing left beam */}
+          {isActive && (
+            <span
+              className="absolute left-0 rounded-r-full"
+              style={{
+                top: '18%',
+                height: '64%',
+                width: '3px',
+                background: 'linear-gradient(180deg, #818cf8 0%, #a78bfa 100%)',
+                boxShadow: '0 0 12px rgba(165,180,252,0.9), 0 0 28px rgba(165,180,252,0.35)',
+              }}
+            />
+          )}
+
+          {/* Icon */}
+          <Icon
+            className={`relative z-10 h-[17px] w-[17px] shrink-0 nav-icon-animate ${
+              isActive
+                ? 'nav-icon-active text-indigo-300'
+                : 'text-slate-500 group-hover:text-indigo-400'
+            }`}
+          />
+
+          {/* Label */}
+          <span className="relative z-10 tracking-[0.01em]">{label}</span>
+        </>
+      )}
+    </NavLink>
+  )
+}
+
+// ── Section label ─────────────────────────────────────────────────────────────
+
+function NavSection({ label }: { label: string }) {
+  return (
+    <p className="mb-1.5 px-3 text-[9px] font-bold uppercase tracking-[0.15em] text-slate-600">
+      {label}
+    </p>
+  )
+}
+
+// ── Sidebar ───────────────────────────────────────────────────────────────────
 
 export function Sidebar() {
   const { user, logout } = useAuth()
+  const { runTransition } = usePageTransition()
+
+  const handleLogout = () => runTransition('logout', logout)
 
   return (
-    <aside className="hidden w-64 shrink-0 flex-col border-r border-slate-800/80 bg-slate-950/80 lg:flex">
-      <div className="flex h-16 items-center gap-2 border-b border-slate-800/80 px-5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-900/40">
-          <Swords className="h-5 w-5" aria-hidden />
+    <aside
+      className="hidden lg:flex w-72 shrink-0 flex-col overflow-y-auto"
+      style={{
+        background: 'rgba(10, 15, 32, 0.75)',
+        backdropFilter: 'blur(24px)',
+        WebkitBackdropFilter: 'blur(24px)',
+        borderRight: '1px solid rgba(192, 193, 255, 0.07)',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.035)',
+      }}
+    >
+
+      {/* ── Brand ──────────────────────────────────────────────────────────── */}
+      <div className="relative flex items-center gap-3.5 px-5 pb-4 pt-5">
+        {/* Atmospheric glow blob */}
+        <div
+          className="pointer-events-none absolute -left-8 -top-8 h-32 w-32 rounded-full opacity-50 blur-[44px]"
+          style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.55) 0%, transparent 70%)' }}
+        />
+
+        {/* Logo box */}
+        <div
+          className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+          style={{
+            background: 'linear-gradient(135deg, #6366f1 0%, #7c3aed 100%)',
+            boxShadow: '0 0 20px rgba(99,102,241,0.55), 0 0 48px rgba(99,102,241,0.18)',
+          }}
+        >
+          <Gamepad2 className="h-[22px] w-[22px] text-white" />
         </div>
-        <div>
-          <p className="text-sm font-semibold text-white">Tournament OS</p>
-          <p className="text-xs text-slate-500">CMPE-131</p>
+
+        {/* Name + status */}
+        <div className="relative min-w-0">
+          <h1 className="text-sm font-black uppercase leading-none tracking-[0.16em] text-indigo-100">
+            Tournament OS
+          </h1>
+          <div className="mt-1.5 flex items-center gap-1.5">
+            <span
+              className="dot-pulse inline-block h-[7px] w-[7px] rounded-full bg-indigo-400"
+              style={{ boxShadow: '0 0 8px rgba(165,180,252,1)' }}
+            />
+            <span className="text-[9.5px] font-bold uppercase tracking-[0.11em] text-slate-500">
+              Elite Management
+            </span>
+          </div>
         </div>
       </div>
-      <nav className="flex flex-1 flex-col gap-1 p-3" aria-label="Main">
-        <NavLink to="/dashboard" className={({ isActive }) => `${linkBase} ${isActive ? linkActive : ''}`}>
-          <LayoutDashboard className="h-5 w-5 opacity-80" />
-          Dashboard
-        </NavLink>
-        <NavLink to="/tournaments" className={({ isActive }) => `${linkBase} ${isActive ? linkActive : ''}`}>
-          <Trophy className="h-5 w-5 opacity-80" />
-          Tournaments
-        </NavLink>
-        <NavLink
-          to="/participants"
-          className={({ isActive }) => `${linkBase} ${isActive ? linkActive : ''}`}
-        >
-          <Users className="h-5 w-5 opacity-80" />
-          Participants
-        </NavLink>
-        <NavLink to="/matches" className={({ isActive }) => `${linkBase} ${isActive ? linkActive : ''}`}>
-          <Swords className="h-5 w-5 opacity-80" />
-          Matches / Brackets
-        </NavLink>
+
+      {/* ── Main navigation ────────────────────────────────────────────────── */}
+      <nav className="flex flex-1 flex-col px-3 pt-2" aria-label="Main navigation">
+        <NavSection label="Navigation" />
+        <div className="flex flex-col gap-0.5">
+          <SideNavItem to="/dashboard"    label="Dashboard"    icon={LayoutDashboard} />
+          <SideNavItem to="/tournaments"  label="Tournaments"  icon={Trophy} />
+          <SideNavItem to="/participants" label="Participants" icon={Users} />
+          <SideNavItem to="/matches"      label="Matches"      icon={Swords} />
+        </div>
+
+        {/* ── Preferences ──────────────────────────────────────────────────── */}
+        <div className="mt-5 border-t border-white/[0.05] pt-4">
+          <NavSection label="Preferences" />
+          <div className="flex flex-col gap-0.5">
+            <SideNavItem to="/settings" label="Settings" icon={Settings} />
+            {user?.role === 'TO' && (
+              <SideNavItem to="/admin" label="Admin Panel" icon={ShieldCheck} />
+            )}
+          </div>
+        </div>
       </nav>
-      <div className="border-t border-slate-800/80 p-3">
-        {user ? (
-          <button
-            type="button"
-            onClick={logout}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400 transition hover:bg-slate-800/80 hover:text-white"
-          >
-            <LogOut className="h-5 w-5" />
-            Logout
-          </button>
-        ) : (
+
+      {/* ── Bottom ─────────────────────────────────────────────────────────── */}
+      <div className="p-4 pt-3 space-y-3">
+        {/* Thin gradient divider */}
+        <div className="h-px bg-gradient-to-r from-transparent via-white/[0.07] to-transparent" />
+
+        {/* Create Tournament — TO only */}
+        {user?.role === 'TO' && (
           <NavLink
-            to="/login"
-            className={({ isActive }) => `${linkBase} w-full ${isActive ? linkActive : ''}`}
+            to="/tournaments/new"
+            className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl py-2.5 text-sm font-bold text-white transition-transform duration-300 hover:scale-[1.02] active:scale-[0.98]"
+            style={{
+              background: 'linear-gradient(135deg, #6366f1 0%, #7c3aed 100%)',
+              boxShadow: '0 4px 22px rgba(99,102,241,0.45), 0 1px 0 rgba(255,255,255,0.1) inset',
+            }}
           >
-            <LogIn className="h-5 w-5" />
-            Login
+            {/* Shimmer sweep on hover */}
+            <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-[900ms] group-hover:translate-x-full" />
+            <Plus className="relative z-10 h-4 w-4" />
+            <span className="relative z-10 tracking-wide">Create Tournament</span>
           </NavLink>
         )}
+
+        {/* Glass user card */}
+        <div
+          className="flex items-center justify-between gap-2.5 rounded-xl p-3"
+          style={{
+            background: 'rgba(25, 31, 52, 0.55)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            border: '1px solid rgba(192, 193, 255, 0.09)',
+            borderTopColor: 'rgba(192, 193, 255, 0.22)',
+          }}
+        >
+          {/* Avatar + info */}
+          <div className="flex min-w-0 items-center gap-2.5">
+            <div className="relative shrink-0">
+              {user?.photoUrl ? (
+                <img
+                  src={user.photoUrl}
+                  alt={user?.name ?? 'User'}
+                  className="h-9 w-9 rounded-full object-cover"
+                  style={{ border: '1px solid rgba(165,180,252,0.3)' }}
+                />
+              ) : (
+                <div
+                  className="flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white"
+                  style={{
+                    background: 'linear-gradient(135deg, #6366f1 0%, #7c3aed 100%)',
+                    border: '1px solid rgba(165,180,252,0.3)',
+                  }}
+                >
+                  {user?.name?.charAt(0)?.toUpperCase() ?? '?'}
+                </div>
+              )}
+              {/* Online indicator dot */}
+              <span
+                className="dot-pulse absolute -bottom-px -right-px h-3 w-3 rounded-full border-2 bg-indigo-400"
+                style={{
+                  borderColor: 'rgba(10,15,32,0.95)',
+                  boxShadow: '0 0 8px rgba(165,180,252,0.95)',
+                }}
+              />
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-bold leading-none text-white">
+                {user?.name ?? 'Guest'}
+              </p>
+              <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-indigo-400">
+                {user?.role === 'TO' ? 'Organizer' : 'Viewer'}
+              </p>
+            </div>
+          </div>
+
+          {/* Logout */}
+          <button
+            type="button"
+            onClick={handleLogout}
+            title="Sign out"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-500 transition-all duration-200 hover:bg-red-500/10 hover:text-red-400"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
     </aside>
   )

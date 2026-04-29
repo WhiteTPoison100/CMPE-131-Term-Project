@@ -25,6 +25,8 @@ type AuthResult = { ok: boolean; message?: string }
 interface AuthContextValue {
   user: AuthUser | null
   loading: boolean
+  /** Update display name and/or photoUrl in local state + localStorage */
+  updateUserProfile: (patch: Partial<Pick<AuthUser, 'name' | 'photoUrl'>>) => void
   /** Demo login (username + password against backend directly) */
   login: (username: string, password: string) => Promise<AuthResult>
   /** Firebase email/password sign-in */
@@ -158,6 +160,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [finish])
 
+  // ── Update profile (local state only) ─────────────────────────────────────
+  const updateUserProfile = useCallback((patch: Partial<Pick<AuthUser, 'name' | 'photoUrl'>>) => {
+    setUser(prev => {
+      if (!prev) return prev
+      const updated = { ...prev, ...patch }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+      return updated
+    })
+  }, [])
+
   // ── Logout ─────────────────────────────────────────────────────────────────
   const logout = useCallback(() => {
     setUser(null)
@@ -167,8 +179,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const value = useMemo(
-    () => ({ user, loading, login, signIn, signUp, signInWithGoogle, logout }),
-    [user, loading, login, signIn, signUp, signInWithGoogle, logout],
+    () => ({ user, loading, updateUserProfile, login, signIn, signUp, signInWithGoogle, logout }),
+    [user, loading, updateUserProfile, login, signIn, signUp, signInWithGoogle, logout],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

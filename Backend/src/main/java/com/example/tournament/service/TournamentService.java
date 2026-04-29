@@ -2,6 +2,7 @@ package com.example.tournament.service;
 
 import com.example.tournament.dto.TournamentRequest;
 import com.example.tournament.dto.TournamentResponse;
+import com.example.tournament.entity.ActivityAction;
 import com.example.tournament.entity.Tournament;
 import com.example.tournament.entity.TournamentStatus;
 import com.example.tournament.entity.User;
@@ -26,18 +27,21 @@ public class TournamentService {
     private final MatchRepository matchRepository;
     private final BracketRepository bracketRepository;
     private final ParticipantRepository participantRepository;
+    private final ActivityLogService activityLogService;
 
     public TournamentService(
             TournamentRepository tournamentRepository,
             UserRepository userRepository,
             MatchRepository matchRepository,
             BracketRepository bracketRepository,
-            ParticipantRepository participantRepository) {
+            ParticipantRepository participantRepository,
+            ActivityLogService activityLogService) {
         this.tournamentRepository = tournamentRepository;
         this.userRepository = userRepository;
         this.matchRepository = matchRepository;
         this.bracketRepository = bracketRepository;
         this.participantRepository = participantRepository;
+        this.activityLogService = activityLogService;
     }
 
     @Transactional(readOnly = true)
@@ -65,7 +69,9 @@ public class TournamentService {
                 .createdBy(creator)
                 .createdAt(Instant.now())
                 .build();
-        return toResponse(tournamentRepository.save(t));
+        Tournament saved = tournamentRepository.save(t);
+        activityLogService.log(username, ActivityAction.TOURNAMENT_CREATED, null, saved.getName());
+        return toResponse(saved);
     }
 
     @Transactional
@@ -85,10 +91,13 @@ public class TournamentService {
     @Transactional
     public void delete(Long id) {
         Tournament t = find(id);
+        String actor = SecurityUtils.requireUsername();
+        String name = t.getName();
         matchRepository.deleteByTournament(t);
         bracketRepository.deleteByTournament(t);
         participantRepository.deleteByTournament(t);
         tournamentRepository.delete(t);
+        activityLogService.log(actor, ActivityAction.TOURNAMENT_DELETED, null, name);
     }
 
     @Transactional(readOnly = true)
