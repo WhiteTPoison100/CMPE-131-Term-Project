@@ -62,37 +62,69 @@ interface DropdownItemProps {
   onClick?: () => void
   variant?: 'default' | 'danger'
   disabled?: boolean
+  comingSoon?: boolean
 }
 
-function DropdownItem({ icon: Icon, label, sublabel, onClick, variant = 'default', disabled }: DropdownItemProps) {
+function DropdownItem({ icon: Icon, label, sublabel, onClick, variant = 'default', disabled, comingSoon }: DropdownItemProps) {
+  const isDisabled = disabled || comingSoon
   return (
-    <motion.button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      whileHover={!disabled ? { x: 2 } : undefined}
-      className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors disabled:opacity-40 ${
-        variant === 'danger'
-          ? 'text-red-400 hover:bg-red-500/10 hover:text-red-300'
-          : 'text-slate-300 hover:bg-white/[0.06] hover:text-white'
-      }`}
-    >
-      <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors ${
-        variant === 'danger'
-          ? 'bg-red-500/10 text-red-400 group-hover:bg-red-500/20'
-          : 'bg-white/[0.06] text-slate-400 group-hover:bg-indigo-500/15 group-hover:text-indigo-300'
-      }`}>
-        <Icon className="h-3.5 w-3.5" />
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className={`text-sm font-medium leading-none ${variant === 'danger' ? '' : 'group-hover:text-white'}`}>
-          {label}
-        </p>
-        {sublabel && (
-          <p className="mt-0.5 text-[11px] text-slate-600">{sublabel}</p>
+    <div className="relative group/item">
+      <motion.button
+        type="button"
+        onClick={comingSoon ? undefined : onClick}
+        disabled={isDisabled}
+        whileHover={!isDisabled ? { x: 2 } : undefined}
+        className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
+          comingSoon ? 'cursor-default opacity-60' : 'disabled:opacity-40'
+        } ${
+          variant === 'danger'
+            ? 'text-red-400 hover:bg-red-500/10 hover:text-red-300'
+            : 'text-slate-300 hover:bg-white/[0.06] hover:text-white'
+        }`}
+      >
+        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors ${
+          variant === 'danger'
+            ? 'bg-red-500/10 text-red-400 group-hover:bg-red-500/20'
+            : 'bg-white/[0.06] text-slate-400 group-hover:bg-indigo-500/15 group-hover:text-indigo-300'
+        }`}>
+          <Icon className="h-3.5 w-3.5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className={`text-sm font-medium leading-none ${variant === 'danger' ? '' : 'group-hover:text-white'}`}>
+            {label}
+          </p>
+          {sublabel && (
+            <p className="mt-0.5 text-[11px] text-slate-600">{sublabel}</p>
+          )}
+        </div>
+        {comingSoon && (
+          <span className="shrink-0 rounded-full border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-400">
+            Soon
+          </span>
         )}
-      </div>
-    </motion.button>
+      </motion.button>
+
+      {/* Tooltip on hover */}
+      {comingSoon && (
+        <div className="pointer-events-none absolute left-1/2 top-full z-50 mt-1.5 -translate-x-1/2 opacity-0 transition-opacity duration-150 group-hover/item:opacity-100">
+          <div
+            className="whitespace-nowrap rounded-lg px-3 py-1.5 text-[11px] font-medium text-slate-200 shadow-xl"
+            style={{
+              background: 'rgba(15,23,42,0.97)',
+              border: '1px solid rgba(245,158,11,0.25)',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+            }}
+          >
+            🚧 Coming soon — stay tuned!
+            {/* Arrow */}
+            <span
+              className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45"
+              style={{ background: 'rgba(15,23,42,0.97)', border: '1px solid rgba(245,158,11,0.25)', borderBottom: 'none', borderRight: 'none' }}
+            />
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
 

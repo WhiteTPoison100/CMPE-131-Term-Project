@@ -13,6 +13,7 @@ import { MatchesPage } from './pages/MatchesPage'
 import { AdminPage } from './pages/AdminPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { NotificationsPage } from './pages/NotificationsPage'
+import { ProfilePage } from './pages/ProfilePage'
 import { NotFoundPage } from './pages/NotFoundPage'
 
 export default function App() {
@@ -34,6 +35,7 @@ export default function App() {
                 <Route path="admin" element={<AdminPage />} />
                 <Route path="settings" element={<SettingsPage />} />
                 <Route path="notifications" element={<NotificationsPage />} />
+                <Route path="profile" element={<ProfilePage />} />
                 <Route path="*" element={<NotFoundPage />} />
               </Route>
             </Route>
