@@ -9,6 +9,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,12 +41,18 @@ public class FirebaseConfig {
     public void init() {
         if (!FirebaseApp.getApps().isEmpty()) return;
 
-        // Priority 1: JSON content supplied directly as an env var string
+        // Priority 1: JSON content supplied as an env var string (raw JSON or base64-encoded)
         if (serviceAccountJson != null && !serviceAccountJson.isBlank()) {
-            try (InputStream stream =
-                         new ByteArrayInputStream(serviceAccountJson.getBytes(StandardCharsets.UTF_8))) {
-                initFromStream(stream, "env var FIREBASE_SERVICE_ACCOUNT_JSON");
-            } catch (IOException e) {
+            try {
+                String trimmed = serviceAccountJson.trim();
+                // Auto-detect: raw JSON starts with '{', anything else is treated as base64
+                byte[] bytes = trimmed.startsWith("{")
+                        ? trimmed.getBytes(StandardCharsets.UTF_8)
+                        : Base64.getDecoder().decode(trimmed);
+                try (InputStream stream = new ByteArrayInputStream(bytes)) {
+                    initFromStream(stream, "env var FIREBASE_SERVICE_ACCOUNT_JSON");
+                }
+            } catch (Exception e) {
                 log.error("Failed to initialize Firebase from JSON env var: {}", e.getMessage());
             }
             return;
