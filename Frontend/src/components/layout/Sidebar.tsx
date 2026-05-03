@@ -2,7 +2,6 @@ import { NavLink } from 'react-router-dom'
 import {
   Gamepad2,
   LayoutDashboard,
-  LogOut,
   Plus,
   Settings,
   ShieldCheck,
@@ -11,7 +10,6 @@ import {
   Users,
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
-import { usePageTransition } from '../../context/TransitionContext'
 
 // ── Reusable nav item ─────────────────────────────────────────────────────────
 
@@ -84,10 +82,7 @@ function NavSection({ label }: { label: string }) {
 // ── Sidebar ───────────────────────────────────────────────────────────────────
 
 export function Sidebar() {
-  const { user, logout } = useAuth()
-  const { runTransition } = usePageTransition()
-
-  const handleLogout = () => runTransition('logout', logout)
+  const { user } = useAuth()
 
   return (
     <aside
@@ -181,9 +176,9 @@ export function Sidebar() {
           </NavLink>
         )}
 
-        {/* Glass user card */}
+        {/* Glass user card — info only; sign-out is in the top-right dropdown */}
         <div
-          className="flex items-center justify-between gap-2.5 rounded-xl p-3"
+          className="flex items-center gap-2.5 rounded-xl p-3"
           style={{
             background: 'rgba(25, 31, 52, 0.55)',
             backdropFilter: 'blur(12px)',
@@ -192,56 +187,45 @@ export function Sidebar() {
             borderTopColor: 'rgba(192, 193, 255, 0.22)',
           }}
         >
-          {/* Avatar + info */}
-          <div className="flex min-w-0 items-center gap-2.5">
-            <div className="relative shrink-0">
-              {user?.photoUrl ? (
-                <img
-                  src={user.photoUrl}
-                  alt={user?.name ?? 'User'}
-                  className="h-9 w-9 rounded-full object-cover"
-                  style={{ border: '1px solid rgba(165,180,252,0.3)' }}
-                />
-              ) : (
-                <div
-                  className="flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white"
-                  style={{
-                    background: 'linear-gradient(135deg, #6366f1 0%, #7c3aed 100%)',
-                    border: '1px solid rgba(165,180,252,0.3)',
-                  }}
-                >
-                  {user?.name?.charAt(0)?.toUpperCase() ?? '?'}
-                </div>
-              )}
-              {/* Online indicator dot */}
-              <span
-                className="dot-pulse absolute -bottom-px -right-px h-3 w-3 rounded-full border-2 bg-indigo-400"
-                style={{
-                  borderColor: 'rgba(10,15,32,0.95)',
-                  boxShadow: '0 0 8px rgba(165,180,252,0.95)',
-                }}
+          {/* Avatar */}
+          <div className="relative shrink-0">
+            {user?.photoUrl ? (
+              <img
+                src={user.photoUrl}
+                alt={user?.name ?? 'User'}
+                className="h-9 w-9 rounded-full object-cover"
+                style={{ border: '1px solid rgba(165,180,252,0.3)' }}
               />
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-bold leading-none text-white">
-                {user?.name ?? 'Guest'}
-              </p>
-              <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-indigo-400">
-                {user?.role === 'TO' ? 'Organizer' : 'Viewer'}
-              </p>
-            </div>
+            ) : (
+              <div
+                className="flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white"
+                style={{
+                  background: 'linear-gradient(135deg, #6366f1 0%, #7c3aed 100%)',
+                  border: '1px solid rgba(165,180,252,0.3)',
+                }}
+              >
+                {user?.name?.charAt(0)?.toUpperCase() ?? '?'}
+              </div>
+            )}
+            {/* Online indicator dot */}
+            <span
+              className="dot-pulse absolute -bottom-px -right-px h-3 w-3 rounded-full border-2 bg-indigo-400"
+              style={{
+                borderColor: 'rgba(10,15,32,0.95)',
+                boxShadow: '0 0 8px rgba(165,180,252,0.95)',
+              }}
+            />
           </div>
 
-          {/* Logout */}
-          <button
-            type="button"
-            onClick={handleLogout}
-            title="Sign out"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-500 transition-all duration-200 hover:bg-red-500/10 hover:text-red-400"
-          >
-            <LogOut className="h-3.5 w-3.5" />
-          </button>
+          {/* Name + role */}
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-xs font-bold leading-none text-white">
+              {user?.name ?? 'Guest'}
+            </p>
+            <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-indigo-400">
+              {user?.role === 'TO' ? 'Organizer' : 'Viewer'}
+            </p>
+          </div>
         </div>
       </div>
     </aside>

@@ -4,8 +4,11 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import jakarta.annotation.PostConstruct;
+import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,25 +19,58 @@ public class FirebaseConfig {
 
     private static final Logger log = LoggerFactory.getLogger(FirebaseConfig.class);
 
+    /**
+     * Raw JSON content of the Firebase service-account file.
+     * Set via the FIREBASE_SERVICE_ACCOUNT_JSON environment variable on
+     * platforms (e.g. DigitalOcean App Platform) that don't support file mounts.
+     * Takes priority over service-account-path when non-blank.
+     */
+    @Value("${firebase.service-account-json:}")
+    private String serviceAccountJson;
+
+    /**
+     * Absolute path to the service-account JSON file on disk.
+     * Used for local development and Docker deployments where a file can be
+     * mounted or baked into the image.
+     */
     @Value("${firebase.service-account-path:}")
     private String serviceAccountPath;
 
     @PostConstruct
     public void init() {
-        if (serviceAccountPath == null || serviceAccountPath.isBlank()) {
-            log.info("firebase.service-account-path not set — Firebase auth disabled (demo-only mode)");
+        if (!FirebaseApp.getApps().isEmpty()) return;
+
+        // Priority 1: JSON content supplied directly as an env var string
+        if (serviceAccountJson != null && !serviceAccountJson.isBlank()) {
+            try (InputStream stream =
+                         new ByteArrayInputStream(serviceAccountJson.getBytes(StandardCharsets.UTF_8))) {
+                initFromStream(stream, "env var FIREBASE_SERVICE_ACCOUNT_JSON");
+            } catch (IOException e) {
+                log.error("Failed to initialize Firebase from JSON env var: {}", e.getMessage());
+            }
             return;
         }
-        if (!FirebaseApp.getApps().isEmpty()) return;
-        try (FileInputStream serviceAccount = new FileInputStream(serviceAccountPath)) {
-            FirebaseOptions options = FirebaseOptions.builder()
-                    .setCredentials(GoogleCredentials.fromStream(serviceAccount))
-                    .build();
-            FirebaseApp.initializeApp(options);
-            log.info("Firebase Admin SDK initialized from {}", serviceAccountPath);
-        } catch (IOException e) {
-            log.error("Failed to initialize Firebase Admin SDK: {}", e.getMessage());
+
+        // Priority 2: file path on disk (local dev / Docker image)
+        if (serviceAccountPath != null && !serviceAccountPath.isBlank()) {
+            try (InputStream stream = new FileInputStream(serviceAccountPath)) {
+                initFromStream(stream, serviceAccountPath);
+            } catch (IOException e) {
+                log.error("Failed to initialize Firebase from path {}: {}", serviceAccountPath, e.getMessage());
+            }
+            return;
         }
+
+        // Priority 3: neither set — run in demo-only mode (Firebase auth disabled)
+        log.info("No Firebase credentials configured — running in demo-only mode (Firebase auth disabled)");
+    }
+
+    private void initFromStream(InputStream stream, String source) throws IOException {
+        FirebaseOptions options = FirebaseOptions.builder()
+                .setCredentials(GoogleCredentials.fromStream(stream))
+                .build();
+        FirebaseApp.initializeApp(options);
+        log.info("Firebase Admin SDK initialized from {}", source);
     }
 
     public boolean isEnabled() {

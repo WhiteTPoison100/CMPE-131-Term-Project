@@ -1,0 +1,66 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# Production Spring profile  —  loaded when SPRING_PROFILES_ACTIVE=prod
+# (the Dockerfile sets -Dspring.profiles.active=prod automatically)
+#
+# Every sensitive / environment-specific value is read from an environment
+# variable.  The part after the colon is the fallback default, which mirrors
+# the current dev values so the app still starts even if a var is not set.
+#
+# On DigitalOcean App Platform, set these under
+#   App Settings → Environment Variables
+# ──────────────────────────────────────────────────────────────────────────────
+
+spring:
+  application:
+    name: tournament-management
+
+  datasource:
+    # DB_URL  — full JDBC connection string
+    #   DO Managed MySQL example:
+    #     jdbc:mysql://<host>:<port>/tournament_db?useSSL=true&requireSSL=true&serverTimezone=UTC
+    url: ${DB_URL:jdbc:mysql://localhost:3306/tournament_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      # 'update'   — auto-alters schema on startup  (safe for early prod)
+      # 'validate' — fails fast if schema doesn't match entities (strict prod)
+      ddl-auto: ${JPA_DDL_AUTO:update}
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.MySQLDialect
+
+server:
+  # DigitalOcean App Platform injects PORT automatically.
+  # Falls back to 8080 for local Docker testing.
+  port: ${PORT:8080}
+
+app:
+  jwt:
+    # JWT_SECRET — must be a long random string (≥ 32 chars, ideally 64+)
+    secret: ${JWT_SECRET:ChangeThisToALongRandomSecretKeyForProductionUseOnly123456789}
+    # JWT_EXPIRATION_MS — token lifetime in milliseconds (default: 24 h)
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+
+firebase:
+  # ── Option A (recommended for DigitalOcean App Platform) ──────────────────
+  # Paste the entire contents of firebase-service-account.json as the value
+  # of the FIREBASE_SERVICE_ACCOUNT_JSON environment variable in DO.
+  # No file system access required.
+  service-account-json: ${FIREBASE_SERVICE_ACCOUNT_JSON:}
+
+  # ── Option B (Docker with baked-in or mounted file) ───────────────────────
+  # Absolute path inside the container. Defaults to the JSON the Dockerfile
+  # copies in. Only used when Option A env var is not set.
+  # Set to empty string ("") to disable Firebase entirely (demo-only mode).
+  service-account-path: ${FIREBASE_SERVICE_ACCOUNT_PATH:/app/firebase-service-account.json}
+
+logging:
+  level:
+    root: INFO
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN

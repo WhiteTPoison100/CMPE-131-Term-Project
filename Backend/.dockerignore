@@ -1,0 +1,15 @@
+# Compiled output – the build stage produces its own
+target/
+
+# Git & IDE metadata
+.git
+.gitignore
+.cursor
+
+# Docs
+*.md
+README*
+
+# Local environment overrides (never needed inside the image)
+*.env
+.env*
