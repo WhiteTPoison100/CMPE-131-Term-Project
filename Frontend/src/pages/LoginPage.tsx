@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Navigate, useLocation } from 'react-router-dom'
+import { Navigate } from 'react-router-dom'
 import { usePageTransition } from '../context/TransitionContext'
 import { Radio, ShieldCheck, Swords, Trophy, Zap } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
@@ -102,7 +102,6 @@ function ErrorMsg({ msg }: { msg: string | null }) {
 
 export function LoginPage() {
   const { user, loading, login, signIn, signUp, signInWithGoogle } = useAuth()
-  const location = useLocation()
   const { flashLogin } = usePageTransition()
   const savedLanding = '/' + (localStorage.getItem('tournament_os_landing') ?? 'dashboard')
 
@@ -148,7 +147,7 @@ export function LoginPage() {
   const handleGoogle = async () => {
     setError(null)
     const res = await signInWithGoogle()
-    if (res.ok) flashLogin(user?.name)
+    if (res.ok) flashLogin(undefined)
     else setError(res.message ?? 'Google sign-in failed.')
   }
 

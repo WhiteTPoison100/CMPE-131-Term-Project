@@ -28,6 +28,8 @@ export interface Tournament {
   maxParticipants: number
   status: TournamentStatus
   createdAt: string
+  organizerId?: string
+  organizerName?: string
 }
 
 export interface Participant {

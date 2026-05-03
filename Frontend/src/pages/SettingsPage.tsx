@@ -27,7 +27,7 @@ import { updateProfile, deleteUser } from 'firebase/auth'
 
 const TOKEN_KEY = 'tournament_os_token'
 
-function authHeaders() {
+function authHeaders(): Record<string, string> {
   const t = localStorage.getItem(TOKEN_KEY)
   return t ? { Authorization: `Bearer ${t}` } : {}
 }
@@ -515,8 +515,9 @@ function AuthMethodBadge({ provider, method }: { provider?: string; method: stri
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
-export function SettingsPage() {
-  const insidePanel = false
+interface SettingsPageProps { insidePanel?: boolean }
+
+export function SettingsPage({ insidePanel = false }: SettingsPageProps) {
   const { user, updateUserProfile, logout } = useAuth()
   const navigate = useNavigate()
   const { runTransition } = usePageTransition()

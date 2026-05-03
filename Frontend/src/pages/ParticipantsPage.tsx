@@ -13,7 +13,7 @@ import {
 import { useAppData } from '../context/AppDataContext'
 import { useAuth } from '../context/AuthContext'
 import { AddParticipantModal } from '../components/participants/AddParticipantModal'
-import type { Participant, TournamentStatus } from '../types'
+import type { TournamentStatus } from '../types'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
