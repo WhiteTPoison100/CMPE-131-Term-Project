@@ -46,6 +46,11 @@ spec:
           scope: RUN_TIME
           type: SECRET
 
+        # ── CORS ────────────────────────────────────────────────────────────
+        - key: ALLOWED_ORIGINS
+          value: "https://cerulean-fudge-26f4db.netlify.app"
+          scope: RUN_TIME
+
         # ── JPA ─────────────────────────────────────────────────────────────
         - key: JPA_DDL_AUTO
           value: "update"

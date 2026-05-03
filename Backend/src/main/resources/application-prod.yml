@@ -59,6 +59,10 @@ firebase:
   # Set to empty string ("") to disable Firebase entirely (demo-only mode).
   service-account-path: ${FIREBASE_SERVICE_ACCOUNT_PATH:/app/firebase-service-account.json}
 
+cors:
+  # Comma-separated list of allowed frontend origins
+  allowed-origins: ${ALLOWED_ORIGINS:http://localhost:5173}
+
 logging:
   level:
     root: INFO

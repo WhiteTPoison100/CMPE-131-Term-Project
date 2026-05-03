@@ -30,6 +30,9 @@ firebase:
   # Leave blank to run in demo-only mode.
   service-account-path: "C:/Users/bhavp/SJSU/CMPE-131/Class Project/Backend/firebase-service-account.json"
 
+cors:
+  allowed-origins: "http://localhost:5173"
+
 logging:
   level:
     org.springframework.security: INFO
