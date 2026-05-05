@@ -130,7 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const cred = await signInEmailPassword(email, password)
       const idToken = await cred.user.getIdToken()
-      const { authUser, token } = await syncWithBackend(idToken, cred.user.displayName ?? null)
+      const { authUser, token } = await syncWithBackend(idToken, cred.user.displayName ?? null, false)
       finish(authUser, token)
       return { ok: true }
     } catch (err: unknown) {
@@ -158,7 +158,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const cred = await signUpEmailPassword(email, password, fullName)
       const idToken = await cred.user.getIdToken()
-      const { authUser, token } = await syncWithBackend(idToken, fullName)
+      const { authUser, token } = await syncWithBackend(idToken, fullName, true)
       finish(authUser, token)
       return { ok: true }
     } catch (err: unknown) {
@@ -169,7 +169,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [finish])
 
   // ── Google popup ───────────────────────────────────────────────────────────
-  const signInWithGoogle = useCallback(async (): Promise<AuthResult> => {
+  const signInWithGoogle = useCallback(async (isSignUp: boolean = false): Promise<AuthResult> => {
     setLoading(true)
     try {
       const cred = await signInGoogle()
@@ -187,7 +187,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const idToken = await cred.user.getIdToken()
-      const { authUser, token } = await syncWithBackend(idToken, cred.user.displayName ?? null)
+      const { authUser, token } = await syncWithBackend(idToken, cred.user.displayName ?? null, isSignUp)
       finish(authUser, token)
       return { ok: true }
     } catch (err: unknown) {

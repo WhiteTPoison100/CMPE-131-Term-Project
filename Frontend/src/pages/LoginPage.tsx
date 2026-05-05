@@ -131,7 +131,15 @@ export function LoginPage() {
     setError(null)
     const res = await signIn(siEmail, siPassword)
     if (res.ok) flashLogin(siEmail.split('@')[0])
-    else setError(res.message ?? 'Sign-in failed.')
+    else {
+      let msg = res.message ?? 'Sign-in failed.'
+      if (msg.includes('Account does not exist')) {
+        msg += ' Please switch to SIGN UP tab to create an account.'
+      } else if (msg.includes('already registered')) {
+        msg += ' Please use that sign-in method.'
+      }
+      setError(msg)
+    }
   }
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -141,14 +149,29 @@ export function LoginPage() {
     if (suPassword.length < 6) { setError('Password must be at least 6 characters.'); return }
     const res = await signUp(suEmail, suPassword, suName)
     if (res.ok) flashLogin(suName)
-    else setError(res.message ?? 'Sign-up failed.')
+    else {
+      let msg = res.message ?? 'Sign-up failed.'
+      if (msg.includes('already exists') || msg.includes('already registered')) {
+        msg += ' Please switch to SIGN IN tab to log in with that email.'
+      }
+      setError(msg)
+    }
   }
 
   const handleGoogle = async () => {
     setError(null)
-    const res = await signInWithGoogle()
+    const isSignUp = tab === 'signup'
+    const res = await signInWithGoogle(isSignUp)
     if (res.ok) flashLogin(undefined)
-    else setError(res.message ?? 'Google sign-in failed.')
+    else {
+      let msg = res.message ?? 'Google sign-in failed.'
+      if (msg.includes('Account does not exist')) {
+        msg += ' Please switch to SIGN UP tab to create an account.'
+      } else if (msg.includes('already registered')) {
+        msg += ' Please switch to SIGN IN tab to log in.'
+      }
+      setError(msg)
+    }
   }
 
   const handleDemo = async (e: React.FormEvent) => {

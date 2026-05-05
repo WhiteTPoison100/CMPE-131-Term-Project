@@ -110,7 +110,7 @@ function StatCard({
 export function ParticipantsPage() {
   const { tournaments, participants, getTournament, addParticipant, removeParticipant } = useAppData()
   const { user } = useAuth()
-  const isTO = user?.role === 'TO'
+  const canDelete = user?.role === 'TO' || user?.role === 'VIEWER'
 
   const [filterTournament, setFilterTournament] = useState('ALL')
   const [filterStatus, setFilterStatus]         = useState<StatusFilter>('all')
@@ -457,7 +457,7 @@ export function ParticipantsPage() {
                               >
                                 <Pencil className="h-3.5 w-3.5" />
                               </button>
-                              {isTO && (
+                              {canDelete && (
                                 <button
                                   type="button"
                                   onClick={() => removeParticipant(p.id)}

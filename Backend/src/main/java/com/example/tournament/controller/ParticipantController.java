@@ -5,6 +5,7 @@ import com.example.tournament.dto.ParticipantResponse;
 import com.example.tournament.service.ParticipantService;
 import jakarta.validation.Valid;
 import java.util.List;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -34,6 +35,7 @@ public class ParticipantController {
         return participantService.add(tournamentId, request);
     }
 
+    @PreAuthorize("hasRole('TO') or hasRole('VIEWER')")
     @DeleteMapping("/{participantId}")
     public void remove(@PathVariable Long tournamentId, @PathVariable Long participantId) {
         participantService.remove(tournamentId, participantId);
