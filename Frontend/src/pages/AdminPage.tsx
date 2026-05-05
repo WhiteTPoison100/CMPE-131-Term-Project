@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { apiClient } from '../services/apiClient'
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -32,12 +33,6 @@ interface AdminUser {
 
 // ── API helpers ──────────────────────────────────────────────────────────────
 
-const TOKEN_KEY = 'tournament_os_token'
-
-function getAuthHeaders(): Record<string, string> {
-  const token = localStorage.getItem(TOKEN_KEY)
-  return token ? { Authorization: `Bearer ${token}` } : {}
-}
 
 interface BackendUser {
   id: number
@@ -315,9 +310,8 @@ function ActivityTab() {
 
   useEffect(() => {
     setLoading(true)
-    fetch('/api/admin/activity', { headers: getAuthHeaders() })
-      .then(r => r.ok ? r.json() as Promise<ActivityEntry[]> : Promise.reject(r.status))
-      .then(data => { setEntries(data); setLoading(false) })
+    apiClient.get<ActivityEntry[]>('/admin/activity')
+      .then(res => { setEntries(res.data); setLoading(false) })
       .catch(() => setLoading(false))
   }, [])
 
@@ -405,14 +399,10 @@ export function AdminPage() {
     let cancelled = false
     setLoadingUsers(true)
     setFetchError(null)
-    fetch('/api/admin/users', { headers: getAuthHeaders() })
+    apiClient.get<BackendUser[]>('/admin/users')
       .then(res => {
-        if (!res.ok) throw new Error(`Server responded ${res.status}`)
-        return res.json() as Promise<BackendUser[]>
-      })
-      .then(data => {
         if (!cancelled) {
-          setUsers(data.map(mapBackendUser))
+          setUsers(res.data.map(mapBackendUser))
           setLoadingUsers(false)
         }
       })
@@ -452,28 +442,17 @@ export function AdminPage() {
     // Optimistic update
     setUsers(prev => prev.map(u => u.id === id ? { ...u, role: newRole } : u))
 
-    fetch(`/api/admin/users/${id}/role`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-      body: JSON.stringify({ role: newRole }),
-    })
-      .then(async res => {
-        if (res.status === 403) {
-          const body = await res.json() as { message?: string }
-          // Revert
-          setUsers(prev => prev.map(u => u.id === id ? { ...u, role: prevRole ?? u.role } : u))
-          showToast(body.message ?? 'Permission denied', 'error')
-        } else if (!res.ok) {
-          setUsers(prev => prev.map(u => u.id === id ? { ...u, role: prevRole ?? u.role } : u))
-          showToast('Failed to update role — reverted', 'error')
-        } else {
-          const label = newRole === 'TO' ? 'Organizer' : 'Viewer'
-          showToast(`${target?.name ?? 'User'} updated to ${label}`, 'success')
-        }
+    apiClient.patch(`/admin/users/${id}/role`, { role: newRole })
+      .then(() => {
+        const label = newRole === 'TO' ? 'Organizer' : 'Viewer'
+        showToast(`${target?.name ?? 'User'} updated to ${label}`, 'success')
       })
-      .catch(() => {
+      .catch((err: unknown) => {
         setUsers(prev => prev.map(u => u.id === id ? { ...u, role: prevRole ?? u.role } : u))
-        showToast('Network error — change reverted', 'error')
+        const msg =
+          (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+          ?? 'Failed to update role — reverted'
+        showToast(msg, 'error')
       })
   }
 
