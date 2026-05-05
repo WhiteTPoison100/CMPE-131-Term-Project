@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { CheckCircle2, Loader2 } from 'lucide-react'
 import type { Match } from '../../types'
 import { Modal } from '../common/Modal'
 import { TextInput } from '../forms/TextInput'
@@ -21,6 +22,8 @@ function ScoreForm({ match, onClose, onSubmit }: ScoreFormProps) {
   const [s1, setS1] = useState(() => (match.score1 != null ? String(match.score1) : ''))
   const [s2, setS2] = useState(() => (match.score2 != null ? String(match.score2) : ''))
   const [error, setError] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSuccess, setIsSuccess] = useState(false)
 
   const handleSubmit = async () => {
     setError(null)
@@ -34,16 +37,28 @@ function ScoreForm({ match, onClose, onSubmit }: ScoreFormProps) {
       setError('Scores cannot be negative.')
       return
     }
+    setIsSubmitting(true)
     const res = await onSubmit(match.id, Math.floor(n1), Math.floor(n2))
+    setIsSubmitting(false)
     if (!res.ok) {
       setError(res.message ?? 'Unable to save.')
       return
     }
-    onClose()
+    setIsSuccess(true)
+    setTimeout(onClose, 1000)
   }
+
+  const isBusy = isSubmitting || isSuccess
 
   return (
     <div className="space-y-4">
+      {/* ── Animated progress bar ─────────────────────────────────────────── */}
+      {isSubmitting && (
+        <div className="relative h-1 w-full overflow-hidden rounded-full bg-slate-800">
+          <div className="animate-progress-bar absolute inset-y-0 left-0 rounded-full bg-indigo-500" />
+        </div>
+      )}
+
       <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm font-semibold text-white">
@@ -56,6 +71,7 @@ function ScoreForm({ match, onClose, onSubmit }: ScoreFormProps) {
           {match.matchNumber}
         </p>
       </div>
+
       <div className="grid gap-4 sm:grid-cols-2">
         <TextInput
           label={`${match.player1} score`}
@@ -64,6 +80,7 @@ function ScoreForm({ match, onClose, onSubmit }: ScoreFormProps) {
           min={0}
           value={s1}
           onChange={(e) => setS1(e.target.value)}
+          disabled={isBusy}
         />
         <TextInput
           label={`${match.player2} score`}
@@ -72,26 +89,52 @@ function ScoreForm({ match, onClose, onSubmit }: ScoreFormProps) {
           min={0}
           value={s2}
           onChange={(e) => setS2(e.target.value)}
+          disabled={isBusy}
         />
       </div>
-      {error ? <p className="text-sm text-red-400">{error}</p> : null}
+
+      {/* ── Feedback row ──────────────────────────────────────────────────── */}
+      {isSuccess ? (
+        <div className="flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-2.5 text-sm font-semibold text-emerald-400">
+          <CheckCircle2 className="h-4 w-4 shrink-0" />
+          Scores saved!
+        </div>
+      ) : error ? (
+        <p className="text-sm text-red-400">{error}</p>
+      ) : null}
+
       <p className="text-xs text-slate-500">
         Demo rule: ties are rejected so a winner can be highlighted in the UI.
       </p>
+
       <div className="flex justify-end gap-2 border-t border-slate-800 pt-4">
         <button
           type="button"
-          className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-800"
+          disabled={isBusy}
+          className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 transition-opacity hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
           onClick={onClose}
         >
           Cancel
         </button>
         <button
           type="button"
-          className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-900/30 hover:bg-indigo-500"
+          disabled={isBusy}
           onClick={handleSubmit}
+          className="flex min-w-[120px] items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-900/30 transition-opacity hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Submit result
+          {isSubmitting ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Saving…
+            </>
+          ) : isSuccess ? (
+            <>
+              <CheckCircle2 className="h-4 w-4" />
+              Saved!
+            </>
+          ) : (
+            'Submit result'
+          )}
         </button>
       </div>
     </div>
