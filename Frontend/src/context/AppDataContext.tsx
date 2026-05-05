@@ -6,6 +6,7 @@ import {
   useEffect,
   useMemo,
   useReducer,
+  useState,
   type ReactNode,
 } from 'react'
 import type { BracketType, Match, Participant, Tournament } from '../types'
@@ -94,6 +95,7 @@ function reducer(state: AppState, action: AppAction): AppState {
 }
 
 interface AppDataContextValue {
+  loading: boolean
   tournaments: Tournament[]
   participants: Participant[]
   matches: Match[]
@@ -118,6 +120,7 @@ const AppDataContext = createContext<AppDataContextValue | null>(null)
 
 export function AppDataProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function bootstrap() {
@@ -134,6 +137,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         }
       } catch (err) {
         console.error('Failed to load data from backend:', err)
+      } finally {
+        setLoading(false)
       }
     }
     bootstrap()
@@ -235,6 +240,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(
     () => ({
+      loading,
       tournaments: state.tournaments,
       participants: state.participants,
       matches: state.matches,
@@ -251,6 +257,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       updateMatchScore,
     }),
     [
+      loading,
       state.tournaments,
       state.participants,
       state.matches,

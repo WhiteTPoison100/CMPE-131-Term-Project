@@ -108,7 +108,7 @@ function StatCard({
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export function ParticipantsPage() {
-  const { tournaments, participants, getTournament, addParticipant, removeParticipant } = useAppData()
+  const { tournaments, participants, getTournament, addParticipant, removeParticipant, loading } = useAppData()
   const { user } = useAuth()
   const canDelete = user?.role === 'TO' || user?.role === 'VIEWER'
 
@@ -316,7 +316,39 @@ export function ParticipantsPage() {
           boxShadow: 'inset 0 1px 0 rgba(99,102,241,0.08), inset 0 0 20px rgba(99,102,241,0.03)',
         }}
       >
-        {filteredRows.length === 0 ? (
+        {loading ? (
+          <div className="space-y-0">
+            {/* Skeleton header */}
+            <div
+              className="grid px-5 py-3 text-[11px] font-bold uppercase tracking-[0.15em] text-slate-700"
+              style={{ gridTemplateColumns: '3rem 22% 18% 8% 1fr 14% 12%', background: 'rgba(10,16,32,0.97)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+            >
+              <span /> <span>Gamer Tag</span> <span>Tournament</span> <span>Seed</span> <span>Email</span> <span>Status</span> <span />
+            </div>
+            {/* Skeleton rows */}
+            {[1, 2, 3, 4, 5, 6].map((row) => (
+              <div
+                key={row}
+                className="flex items-center gap-4 px-5 py-3.5"
+                style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
+              >
+                <div className="h-4 w-4 rounded bg-slate-800 animate-pulse shrink-0" />
+                <div className="flex flex-1 items-center gap-3">
+                  <div className="h-9 w-9 rounded-full bg-slate-800 animate-pulse shrink-0" />
+                  <div className="space-y-1.5">
+                    <div className="h-3 w-28 rounded-full bg-slate-800 animate-pulse" />
+                    <div className="h-2 w-16 rounded-full bg-slate-800/60 animate-pulse" />
+                  </div>
+                </div>
+                <div className="h-3 w-24 rounded-full bg-slate-800/60 animate-pulse" />
+                <div className="h-5 w-10 rounded bg-slate-800/50 animate-pulse" />
+                <div className="h-3 w-36 rounded-full bg-slate-800/50 animate-pulse" />
+                <div className="h-5 w-20 rounded-full bg-slate-800/60 animate-pulse" />
+                <div className="h-6 w-14 rounded-lg bg-slate-800/40 animate-pulse ml-auto" />
+              </div>
+            ))}
+          </div>
+        ) : filteredRows.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-20 text-slate-600">
             <Users className="h-10 w-10 opacity-30" />
             <p className="text-sm">No participants match the current filters</p>

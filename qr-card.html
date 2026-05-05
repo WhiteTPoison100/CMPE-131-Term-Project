@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tournament OS — QR Export</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      background: #050814;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    /* Ambient background blobs */
+    .bg-blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      pointer-events: none;
+      opacity: 0.18;
+    }
+    .bg-blob-1 {
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, #6366f1, transparent 70%);
+      top: -150px; left: -150px;
+    }
+    .bg-blob-2 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, #7c3aed, transparent 70%);
+      bottom: -100px; right: -100px;
+    }
+
+    /* Card */
+    .card {
+      position: relative;
+      width: 340px;
+      padding: 36px 30px 30px;
+      border-radius: 28px;
+      background: rgba(8, 12, 28, 0.97);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      box-shadow:
+        0 0 0 1px rgba(99, 102, 241, 0.15),
+        0 40px 100px rgba(0, 0, 0, 0.8),
+        0 0 80px rgba(99, 102, 241, 0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 22px;
+    }
+
+    /* Top indigo accent line */
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 36px; right: 36px;
+      height: 2px;
+      border-radius: 0 0 4px 4px;
+      background: linear-gradient(90deg, transparent, #6366f1 30%, #a78bfa 70%, transparent);
+      opacity: 0.9;
+    }
+
+    /* Brand row */
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+    }
+    .logo-box {
+      width: 38px; height: 38px;
+      border-radius: 11px;
+      background: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%);
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.65), 0 0 48px rgba(99, 102, 241, 0.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+    .brand-text {
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #c7d2fe;
+    }
+
+    /* Divider */
+    .divider {
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+    }
+
+    /* Scan label */
+    .scan-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #475569;
+    }
+
+    /* QR frame */
+    .qr-frame {
+      position: relative;
+      padding: 16px;
+      border-radius: 22px;
+      background: #0d1020;
+      border: 1px solid rgba(99, 102, 241, 0.22);
+      box-shadow:
+        0 0 40px rgba(99, 102, 241, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    }
+
+    /* Corner accents */
+    .corner {
+      position: absolute;
+      width: 18px; height: 18px;
+      border-color: #6366f1;
+      border-style: solid;
+      opacity: 0.75;
+    }
+    .corner-tl { top: 7px;  left: 7px;  border-width: 2px 0 0 2px; border-radius: 4px 0 0 0; }
+    .corner-tr { top: 7px;  right: 7px; border-width: 2px 2px 0 0; border-radius: 0 4px 0 0; }
+    .corner-bl { bottom: 7px; left: 7px;  border-width: 0 0 2px 2px; border-radius: 0 0 0 4px; }
+    .corner-br { bottom: 7px; right: 7px; border-width: 0 2px 2px 0; border-radius: 0 0 4px 0; }
+
+    .qr-frame img {
+      display: block;
+      width: 210px;
+      height: 210px;
+      border-radius: 6px;
+    }
+
+    /* URL pill */
+    .url-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(99, 102, 241, 0.08);
+      border: 1px solid rgba(99, 102, 241, 0.22);
+      border-radius: 999px;
+      padding: 7px 16px;
+    }
+    .url-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #818cf8;
+      box-shadow: 0 0 8px rgba(129, 140, 248, 1);
+      flex-shrink: 0;
+    }
+    .url-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11.5px;
+      font-weight: 500;
+      color: #818cf8;
+      letter-spacing: 0.02em;
+    }
+
+    /* Tagline */
+    .tagline {
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      color: #1e293b;
+    }
+
+    /* Download button */
+    .dl-btn {
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 28px;
+      border-radius: 14px;
+      border: none;
+      cursor: pointer;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      background: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%);
+      box-shadow: 0 4px 22px rgba(99,102,241,0.5), 0 1px 0 rgba(255,255,255,0.1) inset;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .dl-btn:hover { transform: scale(1.03); box-shadow: 0 6px 28px rgba(99,102,241,0.65); }
+    .dl-btn:active { transform: scale(0.98); }
+    .dl-btn .shimmer {
+      position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transform: translateX(-100%);
+      transition: transform 0.8s;
+    }
+    .dl-btn:hover .shimmer { transform: translateX(100%); }
+
+    .hint {
+      font-size: 11px;
+      color: #334155;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-blob bg-blob-1"></div>
+  <div class="bg-blob bg-blob-2"></div>
+
+  <!-- The card that gets exported -->
+  <div class="card" id="qr-card">
+
+    <div class="brand">
+      <div class="logo-box">🏆</div>
+      <div class="brand-text">Tournament OS</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="scan-label">Scan to open the app</div>
+
+    <div class="qr-frame">
+      <div class="corner corner-tl"></div>
+      <div class="corner corner-tr"></div>
+      <div class="corner corner-bl"></div>
+      <div class="corner corner-br"></div>
+      <img
+        id="qr-img"
+        crossorigin="anonymous"
+        src="https://api.qrserver.com/v1/create-qr-code/?size=420x420&margin=12&color=6366f1&bgcolor=0d1020&data=https://tinyurl.com/59xmkjz3"
+        alt="QR code"
+      />
+    </div>
+
+    <div class="url-pill">
+      <div class="url-dot"></div>
+      <div class="url-text">tinyurl.com/59xmkjz3</div>
+    </div>
+
+    <div class="tagline">Elite Tournament Management</div>
+
+  </div>
+
+  <!-- Download button (outside card so it won't appear in export) -->
+  <button class="dl-btn" onclick="exportPNG()">
+    <span class="shimmer"></span>
+    ⬇ Download PNG
+  </button>
+  <div class="hint">Wait for the QR to fully load before downloading</div>
+
+  <script>
+    async function exportPNG() {
+      const card = document.getElementById('qr-card')
+      const canvas = await html2canvas(card, {
+        backgroundColor: null,
+        scale: 3,           // 3× for crisp high-res output
+        useCORS: true,
+        logging: false,
+      })
+
+      const link = document.createElement('a')
+      link.download = 'tournament-os-qr.png'
+      link.href = canvas.toDataURL('image/png')
+      link.click()
+    }
+  </script>
+
+</body>
+</html>

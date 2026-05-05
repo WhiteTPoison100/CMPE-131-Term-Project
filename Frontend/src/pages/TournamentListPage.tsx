@@ -52,7 +52,7 @@ function FilterSelect({
 }
 
 export function TournamentListPage() {
-  const { tournaments, participantCountFor, deleteTournament } = useAppData()
+  const { tournaments, participantCountFor, deleteTournament, loading } = useAppData()
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState<'ALL' | TournamentStatus>('ALL')
   const [game, setGame] = useState('ALL')
@@ -165,8 +165,51 @@ export function TournamentListPage() {
           </div>
         </div>
 
-        {/* Content */}
-        {view === 'table' ? (
+        {/* Loading skeleton */}
+        {loading && (
+          <div className="space-y-3">
+            {/* Skeleton table header */}
+            <div
+              className="rounded-t-2xl px-5 py-3"
+              style={{ background: 'rgba(10,16,32,0.8)', border: '1px solid rgba(255,255,255,0.06)' }}
+            >
+              <div className="grid grid-cols-5 gap-4">
+                {[40, 28, 16, 20, 14].map((w, i) => (
+                  <div key={i} className={`h-2.5 w-${w} rounded-full bg-slate-800 animate-pulse`} />
+                ))}
+              </div>
+            </div>
+            {/* Skeleton rows */}
+            {[1, 2, 3, 4, 5].map((row) => (
+              <div
+                key={row}
+                className="flex items-center gap-4 px-5 py-4"
+                style={{
+                  background: 'rgba(15,23,42,0.4)',
+                  border: '1px solid rgba(255,255,255,0.04)',
+                  borderRadius: row === 5 ? '0 0 16px 16px' : undefined,
+                  animationDelay: `${row * 60}ms`,
+                }}
+              >
+                <div className="h-4 w-4 rounded bg-slate-800 animate-pulse shrink-0" />
+                <div className="flex flex-1 items-center gap-3">
+                  <div className="h-8 w-8 rounded-xl bg-slate-800 animate-pulse shrink-0" />
+                  <div className="space-y-1.5 flex-1">
+                    <div className="h-3 w-40 rounded-full bg-slate-800 animate-pulse" />
+                    <div className="h-2 w-24 rounded-full bg-slate-800/60 animate-pulse" />
+                  </div>
+                </div>
+                <div className="h-5 w-20 rounded-full bg-slate-800/70 animate-pulse" />
+                <div className="h-3 w-16 rounded-full bg-slate-800/50 animate-pulse" />
+                <div className="h-3 w-12 rounded-full bg-slate-800/50 animate-pulse" />
+                <div className="h-7 w-16 rounded-lg bg-slate-800/40 animate-pulse" />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Content — only shown after load */}
+        {!loading && (view === 'table' ? (
           <TournamentTable rows={rows} onDelete={deleteTournament} />
         ) : (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -174,10 +217,10 @@ export function TournamentListPage() {
               <TournamentCard key={tournament.id} tournament={tournament} participantCount={participantCount} />
             ))}
           </div>
-        )}
+        ))}
 
-        {/* Empty state */}
-        {filtered.length === 0 && (
+        {/* Empty state — only shown after load completes */}
+        {!loading && filtered.length === 0 && (
           <div className="mt-12 flex flex-col items-center gap-4 py-10 text-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/5 bg-white/[0.03]">
               <Trophy className="h-8 w-8 text-slate-600" />
