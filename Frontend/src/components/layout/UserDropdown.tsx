@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
+
 import {
   ChevronDown,
   HelpCircle,
@@ -133,8 +134,10 @@ export function UserDropdown() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
+  const [signingOut, setSigningOut] = useState(false)
   const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({})
   const triggerRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
 
   // Position the portal menu under the trigger button
   const handleOpen = () => {
@@ -151,19 +154,22 @@ export function UserDropdown() {
   }
 
   // Close on outside click or ESC
+  // Uses pointerdown (covers mouse + touchpad taps) and checks both
+  // the trigger and the menu itself so tapping menu items isn't swallowed
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
-    const onClick = (e: MouseEvent) => {
-      if (triggerRef.current && !triggerRef.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
+    const onPointer = (e: PointerEvent) => {
+      const target = e.target as Node
+      const insideTrigger = triggerRef.current?.contains(target)
+      const insideMenu = menuRef.current?.contains(target)
+      if (!insideTrigger && !insideMenu) setOpen(false)
     }
     document.addEventListener('keydown', onKey)
-    document.addEventListener('mousedown', onClick)
+    document.addEventListener('pointerdown', onPointer)
     return () => {
       document.removeEventListener('keydown', onKey)
-      document.removeEventListener('mousedown', onClick)
+      document.removeEventListener('pointerdown', onPointer)
     }
   }, [open])
 
@@ -171,8 +177,10 @@ export function UserDropdown() {
 
   const firstName = user.name?.split(' ')[0] ?? user.name ?? 'User'
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setOpen(false)
+    setSigningOut(true)
+    await new Promise(r => setTimeout(r, 1100))
     logout()
   }
 
@@ -207,20 +215,44 @@ export function UserDropdown() {
       {/* ── Portal menu ─────────────────────────────────────────────── */}
       {createPortal(
         <AnimatePresence>
+          {signingOut && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="fixed inset-0 z-[9999] flex flex-col items-center justify-center gap-4"
+              style={{ background: 'rgba(5, 8, 20, 0.92)', backdropFilter: 'blur(12px)' }}
+            >
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                className="h-12 w-12 rounded-full border-2 border-indigo-500/20 border-t-indigo-400"
+              />
+              <motion.p
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+                className="text-sm font-semibold tracking-widest text-slate-400 uppercase"
+              >
+                Signing out…
+              </motion.p>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+
+      {createPortal(
+        <AnimatePresence>
           {open && (
             <>
-              {/* Invisible backdrop to catch outside clicks */}
-              <div
-                className="fixed inset-0"
-                style={{ zIndex: 9998 }}
-                onClick={() => setOpen(false)}
-              />
-
               <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: -6 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: -6 }}
                 transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                ref={menuRef}
                 className="w-72 overflow-hidden rounded-2xl border border-white/[0.08] shadow-[0_24px_60px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.03)]"
                 style={{
                   ...menuStyle,
@@ -297,6 +329,7 @@ export function UserDropdown() {
                       icon={HelpCircle}
                       label="Help & Documentation"
                       onClick={() => setOpen(false)}
+                      comingSoon
                     />
                   </div>
 

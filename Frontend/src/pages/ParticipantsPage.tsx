@@ -232,7 +232,7 @@ export function ParticipantsPage() {
             <Download className="h-4 w-4" />
             Export Data
           </button>
-          {isTO && (
+          {canDelete && (
             <button
               type="button"
               onClick={handleAddClick}
