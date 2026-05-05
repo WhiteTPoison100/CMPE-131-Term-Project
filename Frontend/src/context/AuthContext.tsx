@@ -35,7 +35,7 @@ interface AuthContextValue {
   /** Firebase email/password sign-up */
   signUp: (email: string, password: string, fullName: string) => Promise<AuthResult>
   /** Firebase Google popup sign-in / sign-up */
-  signInWithGoogle: () => Promise<AuthResult>
+  signInWithGoogle: (isSignUp?: boolean) => Promise<AuthResult>
   logout: () => void
 }
 
