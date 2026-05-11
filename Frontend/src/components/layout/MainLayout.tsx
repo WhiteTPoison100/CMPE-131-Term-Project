@@ -16,7 +16,6 @@ import { Navbar } from './Navbar'
 import { Sidebar } from './Sidebar'
 import { Footer } from './Footer'
 import { useAuth } from '../../context/AuthContext'
-import { usePageTransition } from '../../context/TransitionContext'
 
 const mobileNavItems = [
   { to: '/dashboard',    label: 'Dashboard',    icon: LayoutDashboard },
@@ -29,9 +28,6 @@ const mobileNavItems = [
 export function MainLayout() {
   const [open, setOpen] = useState(false)
   const { user, logout } = useAuth()
-  const { runTransition } = usePageTransition()
-
-  const handleLogout = () => runTransition('logout', logout)
 
   return (
     <div className="flex h-svh overflow-hidden bg-slate-950">
@@ -139,7 +135,7 @@ export function MainLayout() {
                 <button
                   type="button"
                   className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-red-400 transition-colors hover:bg-red-500/10"
-                  onClick={handleLogout}
+                  onClick={() => { setOpen(false); logout() }}
                 >
                   <LogOut className="h-4 w-4 shrink-0" />
                   Sign out

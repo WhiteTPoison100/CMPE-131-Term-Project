@@ -21,7 +21,7 @@ function groupByRound(matches: Match[]): Map<number, Match[]> {
 }
 
 export function MatchesPage() {
-  const { matches, tournaments, getTournament, updateMatchScore } = useAppData()
+  const { matches, tournaments, getTournament, updateMatchScore, loading } = useAppData()
   const { user } = useAuth()
   const isOrganizer = user?.role === 'TO'
 
@@ -127,8 +127,48 @@ export function MatchesPage() {
           </div>
         </div>
 
-        {/* Empty state */}
-        {filtered.length === 0 && (
+        {/* Loading skeleton */}
+        {loading && (
+          <div className="space-y-10">
+            {[1, 2].map((section) => (
+              <div key={section} className="space-y-4">
+                {/* Section header skeleton */}
+                <div className="flex items-center gap-3">
+                  <div className="h-4 w-0.5 rounded-full bg-slate-800" />
+                  <div className="h-3 w-32 rounded-full bg-slate-800 animate-pulse" />
+                  <div className="flex-1 h-px bg-white/[0.04]" />
+                </div>
+                {/* Round label skeleton */}
+                <div className="h-2.5 w-16 rounded-full bg-slate-800/80 animate-pulse" />
+                {/* Card skeletons */}
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                  {[1, 2, 3].map((card) => (
+                    <div
+                      key={card}
+                      className="rounded-2xl border border-white/[0.05] bg-white/[0.02] p-4 space-y-3"
+                      style={{ animationDelay: `${card * 80}ms` }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="h-3 w-24 rounded-full bg-slate-800 animate-pulse" />
+                        <div className="h-5 w-16 rounded-full bg-slate-800/60 animate-pulse" />
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="h-4 w-20 rounded-full bg-slate-800 animate-pulse" />
+                        <div className="h-6 w-10 rounded-lg bg-slate-800/60 animate-pulse" />
+                        <div className="h-3 w-5 rounded-full bg-slate-700/40 animate-pulse" />
+                        <div className="h-6 w-10 rounded-lg bg-slate-800/60 animate-pulse" />
+                        <div className="h-4 w-20 rounded-full bg-slate-800 animate-pulse" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Empty state — only shown after loading completes */}
+        {!loading && filtered.length === 0 && (
           <div className="flex flex-col items-center gap-4 py-16 text-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/5 bg-white/[0.03]">
               <Swords className="h-8 w-8 text-slate-600" />
@@ -147,7 +187,7 @@ export function MatchesPage() {
         )}
 
         {/* Bracket lanes */}
-        <div className="space-y-12">
+        {!loading && <div className="space-y-12">
           {lanes.map(({ key, label, roundPrefix, accent, divider }) => {
             const byRound = grouped[key]
             if (byRound.size === 0) return null
@@ -214,7 +254,7 @@ export function MatchesPage() {
               </section>
             )
           })}
-        </div>
+        </div>}
       </div>
 
       {isOrganizer && (

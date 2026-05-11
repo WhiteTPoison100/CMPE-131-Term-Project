@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Navigate, useLocation } from 'react-router-dom'
+import { Navigate } from 'react-router-dom'
 import { usePageTransition } from '../context/TransitionContext'
 import { Radio, ShieldCheck, Swords, Trophy, Zap } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
@@ -102,7 +102,6 @@ function ErrorMsg({ msg }: { msg: string | null }) {
 
 export function LoginPage() {
   const { user, loading, login, signIn, signUp, signInWithGoogle } = useAuth()
-  const location = useLocation()
   const { flashLogin } = usePageTransition()
   const savedLanding = '/' + (localStorage.getItem('tournament_os_landing') ?? 'dashboard')
 
@@ -132,7 +131,15 @@ export function LoginPage() {
     setError(null)
     const res = await signIn(siEmail, siPassword)
     if (res.ok) flashLogin(siEmail.split('@')[0])
-    else setError(res.message ?? 'Sign-in failed.')
+    else {
+      let msg = res.message ?? 'Sign-in failed.'
+      if (msg.includes('Account does not exist')) {
+        msg += ' Please switch to SIGN UP tab to create an account.'
+      } else if (msg.includes('already registered')) {
+        msg += ' Please use that sign-in method.'
+      }
+      setError(msg)
+    }
   }
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -142,14 +149,29 @@ export function LoginPage() {
     if (suPassword.length < 6) { setError('Password must be at least 6 characters.'); return }
     const res = await signUp(suEmail, suPassword, suName)
     if (res.ok) flashLogin(suName)
-    else setError(res.message ?? 'Sign-up failed.')
+    else {
+      let msg = res.message ?? 'Sign-up failed.'
+      if (msg.includes('already exists') || msg.includes('already registered')) {
+        msg += ' Please switch to SIGN IN tab to log in with that email.'
+      }
+      setError(msg)
+    }
   }
 
   const handleGoogle = async () => {
     setError(null)
-    const res = await signInWithGoogle()
-    if (res.ok) flashLogin(user?.name)
-    else setError(res.message ?? 'Google sign-in failed.')
+    const isSignUp = tab === 'signup'
+    const res = await signInWithGoogle(isSignUp)
+    if (res.ok) flashLogin(undefined)
+    else {
+      let msg = res.message ?? 'Google sign-in failed.'
+      if (msg.includes('Account does not exist')) {
+        msg += ' Please switch to SIGN UP tab to create an account.'
+      } else if (msg.includes('already registered')) {
+        msg += ' Please switch to SIGN IN tab to log in.'
+      }
+      setError(msg)
+    }
   }
 
   const handleDemo = async (e: React.FormEvent) => {

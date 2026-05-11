@@ -1,4 +1,7 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
+import { AnimatePresence, motion } from 'framer-motion'
+import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Gamepad2,
   LayoutDashboard,
@@ -11,7 +14,6 @@ import {
   Users,
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
-import { usePageTransition } from '../../context/TransitionContext'
 
 // ── Reusable nav item ─────────────────────────────────────────────────────────
 
@@ -85,11 +87,18 @@ function NavSection({ label }: { label: string }) {
 
 export function Sidebar() {
   const { user, logout } = useAuth()
-  const { runTransition } = usePageTransition()
+  const navigate = useNavigate()
+  const [signingOut, setSigningOut] = useState(false)
 
-  const handleLogout = () => runTransition('logout', logout)
+  const handleSignOut = async () => {
+    setSigningOut(true)
+    // Brief pause for animation to play before clearing state
+    await new Promise(r => setTimeout(r, 1100))
+    logout()
+  }
 
   return (
+    <>
     <aside
       className="hidden lg:flex w-72 shrink-0 flex-col overflow-y-auto"
       style={{
@@ -183,7 +192,7 @@ export function Sidebar() {
 
         {/* Glass user card */}
         <div
-          className="flex items-center justify-between gap-2.5 rounded-xl p-3"
+          className="rounded-xl p-3"
           style={{
             background: 'rgba(25, 31, 52, 0.55)',
             backdropFilter: 'blur(12px)',
@@ -192,8 +201,9 @@ export function Sidebar() {
             borderTopColor: 'rgba(192, 193, 255, 0.22)',
           }}
         >
-          {/* Avatar + info */}
-          <div className="flex min-w-0 items-center gap-2.5">
+          {/* Top row: avatar + name + action icons */}
+          <div className="flex items-center gap-2.5">
+            {/* Avatar */}
             <div className="relative shrink-0">
               {user?.photoUrl ? (
                 <img
@@ -223,6 +233,7 @@ export function Sidebar() {
               />
             </div>
 
+            {/* Name + role */}
             <div className="min-w-0 flex-1">
               <p className="truncate text-xs font-bold leading-none text-white">
                 {user?.name ?? 'Guest'}
@@ -231,19 +242,68 @@ export function Sidebar() {
                 {user?.role === 'TO' ? 'Organizer' : 'Viewer'}
               </p>
             </div>
-          </div>
 
-          {/* Logout */}
-          <button
-            type="button"
-            onClick={handleLogout}
-            title="Sign out"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-500 transition-all duration-200 hover:bg-red-500/10 hover:text-red-400"
-          >
-            <LogOut className="h-3.5 w-3.5" />
-          </button>
+            {/* Action icons */}
+            <div className="flex shrink-0 items-center gap-1">
+              <motion.button
+                type="button"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.92 }}
+                onClick={() => navigate('/settings')}
+                title="Settings"
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-white/[0.07] hover:text-indigo-300"
+              >
+                <Settings className="h-3.5 w-3.5" />
+              </motion.button>
+
+              <motion.button
+                type="button"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.92 }}
+                onClick={handleSignOut}
+                disabled={signingOut}
+                title="Sign out"
+                className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-500/10 text-red-400 transition-colors hover:bg-red-500/20 hover:text-red-300 disabled:opacity-60"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+              </motion.button>
+            </div>
+          </div>
         </div>
       </div>
+
     </aside>
+
+      {/* ── Sign-out overlay — rendered via portal so it covers the full page ── */}
+      {createPortal(
+        <AnimatePresence>
+          {signingOut && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="fixed inset-0 z-[9999] flex flex-col items-center justify-center gap-4"
+              style={{ background: 'rgba(5, 8, 20, 0.92)', backdropFilter: 'blur(12px)' }}
+            >
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                className="h-12 w-12 rounded-full border-2 border-indigo-500/20 border-t-indigo-400"
+              />
+              <motion.p
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+                className="text-sm font-semibold tracking-widest text-slate-400 uppercase"
+              >
+                Signing out…
+              </motion.p>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+    </>
   )
 }

@@ -88,7 +88,14 @@ public class AuthService {
             }
         }
 
-        // 3. New user — create with VIEWER role
+        // 3. New user
+        // If this is a sign-in attempt (not sign-up), reject with "account does not exist"
+        if (!request.isSignUp()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Account does not exist. Please sign up first.");
+        }
+
+        // Sign-up flow: create account with VIEWER role
         String base = (email != null && email.contains("@")) ? email.split("@")[0] : uid.substring(0, 8);
         String username = makeUniqueUsername(base);
         String displayName = (request.displayName() != null && !request.displayName().isBlank())
@@ -111,7 +118,7 @@ public class AuthService {
     /** Kept for backward compatibility; delegates to sync internally. */
     @Transactional
     public LoginResponse firebaseLogin(FirebaseLoginRequest request) {
-        SyncResponse sr = sync(new SyncRequest(request.idToken(), null));
+        SyncResponse sr = sync(new SyncRequest(request.idToken(), null, false));
         return new LoginResponse(sr.token(), sr.username(), sr.role());
     }
 

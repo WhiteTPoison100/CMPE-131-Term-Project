@@ -38,10 +38,12 @@ export async function loginApi(
 export async function syncWithBackend(
   idToken: string,
   displayName: string | null,
+  isSignUp: boolean = false,
 ): Promise<{ authUser: AuthUser; token: string }> {
   const { data } = await apiClient.post<BackendSyncResponse>('/auth/sync', {
     idToken,
     displayName,
+    isSignUp,
   })
   return {
     authUser: {

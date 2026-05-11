@@ -3,6 +3,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -34,16 +35,40 @@ interface AuthContextValue {
   /** Firebase email/password sign-up */
   signUp: (email: string, password: string, fullName: string) => Promise<AuthResult>
   /** Firebase Google popup sign-in / sign-up */
-  signInWithGoogle: () => Promise<AuthResult>
+  signInWithGoogle: (isSignUp?: boolean) => Promise<AuthResult>
   logout: () => void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
+/**
+ * Decode a JWT payload and check if it has expired.
+ * Does NOT verify the signature — that is the backend's job.
+ */
+function isTokenExpired(token: string): boolean {
+  try {
+    // JWT payload is the second segment, base64url-encoded
+    const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')
+    const payload = JSON.parse(atob(b64)) as { exp?: number }
+    if (typeof payload.exp !== 'number') return false
+    return Date.now() >= payload.exp * 1000
+  } catch {
+    return true // can't parse → treat as expired
+  }
+}
+
+/** Load user from localStorage, but only if the accompanying JWT is still valid. */
 function loadStoredUser(): AuthUser | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return null
+    const token = localStorage.getItem(TOKEN_KEY)
+    if (!raw || !token) return null
+    // Clear and reject stale sessions so the user goes back to login
+    if (isTokenExpired(token)) {
+      localStorage.removeItem(STORAGE_KEY)
+      localStorage.removeItem(TOKEN_KEY)
+      return null
+    }
     return JSON.parse(raw) as AuthUser
   } catch {
     return null
@@ -62,6 +87,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const finish = useCallback((authUser: AuthUser, token: string) => {
     setUser(authUser)
     storeSession(authUser, token)
+  }, [])
+
+  // ── Session-expired event (fired by apiClient interceptor) ─────────────────
+  useEffect(() => {
+    const handle = () => {
+      setUser(null)
+      localStorage.removeItem(STORAGE_KEY)
+      localStorage.removeItem(TOKEN_KEY)
+      // RequireAuth will see user=null and redirect to /login automatically
+    }
+    window.addEventListener('auth:session-expired', handle)
+    return () => window.removeEventListener('auth:session-expired', handle)
   }, [])
 
   // ── Demo login ─────────────────────────────────────────────────────────────
@@ -93,7 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const cred = await signInEmailPassword(email, password)
       const idToken = await cred.user.getIdToken()
-      const { authUser, token } = await syncWithBackend(idToken, cred.user.displayName ?? null)
+      const { authUser, token } = await syncWithBackend(idToken, cred.user.displayName ?? null, false)
       finish(authUser, token)
       return { ok: true }
     } catch (err: unknown) {
@@ -121,7 +158,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const cred = await signUpEmailPassword(email, password, fullName)
       const idToken = await cred.user.getIdToken()
-      const { authUser, token } = await syncWithBackend(idToken, fullName)
+      const { authUser, token } = await syncWithBackend(idToken, fullName, true)
       finish(authUser, token)
       return { ok: true }
     } catch (err: unknown) {
@@ -132,7 +169,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [finish])
 
   // ── Google popup ───────────────────────────────────────────────────────────
-  const signInWithGoogle = useCallback(async (): Promise<AuthResult> => {
+  const signInWithGoogle = useCallback(async (isSignUp: boolean = false): Promise<AuthResult> => {
     setLoading(true)
     try {
       const cred = await signInGoogle()
@@ -150,7 +187,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const idToken = await cred.user.getIdToken()
-      const { authUser, token } = await syncWithBackend(idToken, cred.user.displayName ?? null)
+      const { authUser, token } = await syncWithBackend(idToken, cred.user.displayName ?? null, isSignUp)
       finish(authUser, token)
       return { ok: true }
     } catch (err: unknown) {

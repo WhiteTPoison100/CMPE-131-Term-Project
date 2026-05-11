@@ -1,0 +1,57 @@
+spec:
+  name: tournament-os
+  region: nyc  # Change to your preferred region (nyc, sfo, lon, fra, sgp, blr, syd, tor)
+
+  services:
+    - name: backend
+      dockerfile_path: Backend/Dockerfile
+      source_dir: Backend
+
+      # Health check — DO pings this to know the app is alive
+      health_check:
+        http_path: /api/auth/login
+        initial_delay_seconds: 30
+        period_seconds: 30
+        failure_threshold: 3
+
+      http_port: 8080
+      instance_size_slug: basic-xxs   # Cheapest tier; upgrade as needed
+      instance_count: 1
+
+      envs:
+        # ── Database ────────────────────────────────────────────────────────
+        - key: DB_URL
+          scope: RUN_TIME
+          type: SECRET
+
+        - key: DB_USERNAME
+          scope: RUN_TIME
+          type: SECRET
+
+        - key: DB_PASSWORD
+          scope: RUN_TIME
+          type: SECRET
+
+        # ── JWT ─────────────────────────────────────────────────────────────
+        - key: JWT_SECRET
+          scope: RUN_TIME
+          type: SECRET
+
+        - key: JWT_EXPIRATION_MS
+          value: "86400000"
+          scope: RUN_TIME
+
+        # ── Firebase ────────────────────────────────────────────────────────
+        - key: FIREBASE_SERVICE_ACCOUNT_JSON
+          scope: RUN_TIME
+          type: SECRET
+
+        # ── CORS ────────────────────────────────────────────────────────────
+        - key: ALLOWED_ORIGINS
+          value: "https://cerulean-fudge-26f4db.netlify.app"
+          scope: RUN_TIME
+
+        # ── JPA ─────────────────────────────────────────────────────────────
+        - key: JPA_DDL_AUTO
+          value: "update"
+          scope: RUN_TIME

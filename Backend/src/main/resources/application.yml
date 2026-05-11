@@ -7,6 +7,8 @@ spring:
     username: root
     password: Sahib2611*
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      connection-test-query: "SELECT 1"
 
   jpa:
     hibernate:
@@ -29,6 +31,9 @@ firebase:
   # Set to the absolute path of your Firebase service account JSON to enable Firebase auth.
   # Leave blank to run in demo-only mode.
   service-account-path: "C:/Users/bhavp/SJSU/CMPE-131/Class Project/Backend/firebase-service-account.json"
+
+cors:
+  allowed-origins: "http://localhost:5173"
 
 logging:
   level:
